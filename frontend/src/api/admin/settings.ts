@@ -22,7 +22,8 @@ export type AuthSourceType =
   | "oidc"
   | "wechat"
   | "github"
-  | "google";
+  | "google"
+  | "windows_ad";
 
 export interface AuthSourceDefaultsValue {
   balance: number;
@@ -64,6 +65,7 @@ const AUTH_SOURCE_TYPES: AuthSourceType[] = [
   "wechat",
   "github",
   "google",
+  "windows_ad",
 ];
 const AUTH_SOURCE_DEFAULT_BALANCE = 0;
 const AUTH_SOURCE_DEFAULT_CONCURRENCY = 5;
@@ -437,6 +439,19 @@ export interface SystemSettings {
   oidc_connect_userinfo_email_path: string;
   oidc_connect_userinfo_id_path: string;
   oidc_connect_userinfo_username_path: string;
+  windows_ad_enabled: boolean;
+  windows_ad_provider_name: string;
+  windows_ad_url: string;
+  windows_ad_base_dn: string;
+  windows_ad_bind_dn: string;
+  windows_ad_bind_password_configured: boolean;
+  windows_ad_user_filter: string;
+  windows_ad_email_attribute: string;
+  windows_ad_username_attribute: string;
+  windows_ad_display_attribute: string;
+  windows_ad_id_attribute: string;
+  windows_ad_start_tls: boolean;
+  windows_ad_skip_tls_verify: boolean;
   github_oauth_enabled: boolean;
   github_oauth_client_id: string;
   github_oauth_client_secret_configured: boolean;
@@ -645,6 +660,19 @@ export interface UpdateSettingsRequest {
   oidc_connect_userinfo_email_path?: string;
   oidc_connect_userinfo_id_path?: string;
   oidc_connect_userinfo_username_path?: string;
+  windows_ad_enabled?: boolean;
+  windows_ad_provider_name?: string;
+  windows_ad_url?: string;
+  windows_ad_base_dn?: string;
+  windows_ad_bind_dn?: string;
+  windows_ad_bind_password?: string;
+  windows_ad_user_filter?: string;
+  windows_ad_email_attribute?: string;
+  windows_ad_username_attribute?: string;
+  windows_ad_display_attribute?: string;
+  windows_ad_id_attribute?: string;
+  windows_ad_start_tls?: boolean;
+  windows_ad_skip_tls_verify?: boolean;
   github_oauth_enabled?: boolean;
   github_oauth_client_id?: string;
   github_oauth_client_secret?: string;

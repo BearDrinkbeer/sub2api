@@ -34,7 +34,7 @@ export interface NotifyEmailEntry {
 
 // ==================== User & Auth Types ====================
 
-export type UserAuthProvider = 'email' | 'linuxdo' | 'oidc' | 'wechat' | 'github' | 'google'
+export type UserAuthProvider = 'email' | 'linuxdo' | 'oidc' | 'wechat' | 'github' | 'google' | 'windows_ad'
 
 export interface UserAuthBindingStatus {
   bound?: boolean
@@ -113,6 +113,14 @@ export interface LoginRequest {
   email: string
   password: string
   turnstile_token?: string
+}
+
+export interface WindowsADLoginRequest {
+  username: string
+  password: string
+  turnstile_token?: string
+  invitation_code?: string
+  aff_code?: string
 }
 
 export interface RegisterRequest {
@@ -221,6 +229,8 @@ export interface PublicSettings {
   wechat_oauth_mobile_enabled?: boolean
   oidc_oauth_enabled: boolean
   oidc_oauth_provider_name: string
+  windows_ad_oauth_enabled?: boolean
+  windows_ad_provider_name?: string
   github_oauth_enabled: boolean
   google_oauth_enabled: boolean
   backend_mode_enabled: boolean

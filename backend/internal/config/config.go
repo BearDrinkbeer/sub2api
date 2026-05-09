@@ -72,6 +72,7 @@ type Config struct {
 	LinuxDo                 LinuxDoConnectConfig          `mapstructure:"linuxdo_connect"`
 	WeChat                  WeChatConnectConfig           `mapstructure:"wechat_connect"`
 	OIDC                    OIDCConnectConfig             `mapstructure:"oidc_connect"`
+	WindowsAD               WindowsADConfig               `mapstructure:"windows_ad"`
 	GitHubOAuth             EmailOAuthProviderConfig      `mapstructure:"github_oauth"`
 	GoogleOAuth             EmailOAuthProviderConfig      `mapstructure:"google_oauth"`
 	Default                 DefaultConfig                 `mapstructure:"default"`
@@ -240,6 +241,22 @@ type OIDCConnectConfig struct {
 	UserInfoEmailPath    string `mapstructure:"userinfo_email_path"`
 	UserInfoIDPath       string `mapstructure:"userinfo_id_path"`
 	UserInfoUsernamePath string `mapstructure:"userinfo_username_path"`
+}
+
+type WindowsADConfig struct {
+	Enabled           bool   `mapstructure:"enabled"`
+	ProviderName      string `mapstructure:"provider_name"`
+	URL               string `mapstructure:"url"`
+	BaseDN            string `mapstructure:"base_dn"`
+	BindDN            string `mapstructure:"bind_dn"`
+	BindPassword      string `mapstructure:"bind_password"`
+	UserFilter        string `mapstructure:"user_filter"`
+	EmailAttribute    string `mapstructure:"email_attribute"`
+	UsernameAttribute string `mapstructure:"username_attribute"`
+	DisplayAttribute  string `mapstructure:"display_attribute"`
+	IDAttribute       string `mapstructure:"id_attribute"`
+	StartTLS          bool   `mapstructure:"start_tls"`
+	SkipTLSVerify     bool   `mapstructure:"skip_tls_verify"`
 }
 
 type EmailOAuthProviderConfig struct {

@@ -163,6 +163,38 @@
             :provider-name="oidcOAuthProviderName"
             :show-divider="false"
           />
+          <div v-if="windowsADEnabled" class="rounded-lg border border-gray-200 p-3 dark:border-dark-700">
+            <div class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-dark-100">
+              <Icon name="shield" size="sm" class="text-primary-500" />
+              <span>{{ windowsADProviderName }}</span>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <input
+                v-model="windowsADForm.username"
+                type="text"
+                autocomplete="username"
+                :disabled="authActionDisabled"
+                class="input"
+                :placeholder="t('auth.windowsADUsernamePlaceholder')"
+              />
+              <input
+                v-model="windowsADForm.password"
+                type="password"
+                autocomplete="current-password"
+                :disabled="authActionDisabled"
+                class="input"
+                :placeholder="t('auth.passwordPlaceholder')"
+              />
+            </div>
+            <button
+              type="button"
+              :disabled="authActionDisabled || (turnstileEnabled && !turnstileToken)"
+              class="btn btn-secondary mt-3 w-full"
+              @click="handleWindowsADLogin"
+            >
+              {{ t('auth.windowsADSignIn', { provider: windowsADProviderName }) }}
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -235,6 +267,8 @@ const wechatOAuthEnabled = ref<boolean>(false)
 const backendModeEnabled = ref<boolean>(false)
 const oidcOAuthEnabled = ref<boolean>(false)
 const oidcOAuthProviderName = ref<string>('OIDC')
+const windowsADEnabled = ref<boolean>(false)
+const windowsADProviderName = ref<string>('Windows AD')
 const githubOAuthEnabled = ref<boolean>(false)
 const googleOAuthEnabled = ref<boolean>(false)
 const passwordResetEnabled = ref<boolean>(false)
@@ -258,6 +292,11 @@ const totpModalRef = ref<InstanceType<typeof TotpLoginModal> | null>(null)
 
 const formData = reactive({
   email: '',
+  password: ''
+})
+
+const windowsADForm = reactive({
+  username: '',
   password: ''
 })
 
@@ -285,6 +324,7 @@ const showOAuthLogin = computed(
     (linuxdoOAuthEnabled.value ||
       wechatOAuthEnabled.value ||
       oidcOAuthEnabled.value ||
+      windowsADEnabled.value ||
       githubOAuthEnabled.value ||
       googleOAuthEnabled.value)
 )
@@ -315,6 +355,8 @@ onMounted(async () => {
     backendModeEnabled.value = settings.backend_mode_enabled
     oidcOAuthEnabled.value = settings.oidc_oauth_enabled
     oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || 'OIDC'
+    windowsADEnabled.value = settings.windows_ad_oauth_enabled === true
+    windowsADProviderName.value = settings.windows_ad_provider_name || 'Windows AD'
     githubOAuthEnabled.value = settings.github_oauth_enabled
     googleOAuthEnabled.value = settings.google_oauth_enabled
     backendModeEnabled.value = settings.backend_mode_enabled
@@ -501,6 +543,53 @@ async function handleLogin(): Promise<void> {
     errorMessage.value = extractI18nErrorMessage(error, t, 'auth.errors', t('auth.loginFailed'))
 
     // Also show error toast
+    appStore.showError(errorMessage.value)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleWindowsADLogin(): Promise<void> {
+  errorMessage.value = ''
+  if (agreementGateActive.value) {
+    appStore.showWarning('请先阅读并同意最新条款后再登录。')
+    if (loginAgreementMode.value !== 'checkbox') showAgreementModal.value = true
+    return
+  }
+  if (!windowsADForm.username.trim() || !windowsADForm.password) {
+    appStore.showError(t('auth.windowsADRequired'))
+    return
+  }
+  if (turnstileEnabled.value && !turnstileToken.value) {
+    appStore.showError(t('auth.completeVerification'))
+    return
+  }
+
+  isLoading.value = true
+  try {
+    const response = await authStore.loginWindowsAD({
+      username: windowsADForm.username,
+      password: windowsADForm.password,
+      turnstile_token: turnstileEnabled.value ? turnstileToken.value : undefined
+    })
+    if (isTotp2FARequired(response)) {
+      const totpResponse = response as TotpLoginResponse
+      totpTempToken.value = totpResponse.temp_token || ''
+      totpUserEmailMasked.value = totpResponse.user_email_masked || ''
+      show2FAModal.value = true
+      isLoading.value = false
+      return
+    }
+    clearAllAffiliateReferralCodes()
+    appStore.showSuccess(t('auth.loginSuccess'))
+    const redirectTo = (router.currentRoute.value.query.redirect as string) || '/dashboard'
+    await router.push(redirectTo)
+  } catch (error: unknown) {
+    if (turnstileRef.value) {
+      turnstileRef.value.reset()
+      turnstileToken.value = ''
+    }
+    errorMessage.value = extractI18nErrorMessage(error, t, 'auth.errors', t('auth.loginFailed'))
     appStore.showError(errorMessage.value)
   } finally {
     isLoading.value = false
