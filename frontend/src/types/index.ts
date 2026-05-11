@@ -229,7 +229,7 @@ export interface PublicSettings {
   wechat_oauth_mobile_enabled?: boolean
   oidc_oauth_enabled: boolean
   oidc_oauth_provider_name: string
-  windows_ad_oauth_enabled?: boolean
+  windows_ad_enabled?: boolean
   windows_ad_provider_name?: string
   github_oauth_enabled: boolean
   google_oauth_enabled: boolean
