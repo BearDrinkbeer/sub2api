@@ -274,7 +274,6 @@
               </div>
             </div>
           </div>
-          </div>
         </div>
         <!-- /Tab: Security — Admin API Key -->
 
