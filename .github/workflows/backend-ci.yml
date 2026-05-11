@@ -70,7 +70,7 @@ jobs:
 
   tag:
     needs: [test, frontend, golangci-lint]
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref =~ '^refs/heads/'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
