@@ -222,7 +222,7 @@ func (s *SettingService) GetWindowsADConfig(ctx context.Context) (config.Windows
 	if err != nil {
 		return config.WindowsADConfig{}, fmt.Errorf("get windows ad settings: %w", err)
 	}
-	effective.Enabled = boolSettingOrDefault(settings, SettingKeyWindowsADEnabled, effective.Enabled)
+	effective.Enabled = boolSettingOrDefault(settings, SettingKeyWindowsADEnabled, false)
 	effective.ProviderName = firstNonEmpty(settings[SettingKeyWindowsADProviderName], effective.ProviderName, defaultWindowsADProviderName)
 	effective.URL = firstNonEmpty(settings[SettingKeyWindowsADURL], effective.URL)
 	effective.BaseDN = firstNonEmpty(settings[SettingKeyWindowsADBaseDN], effective.BaseDN)
