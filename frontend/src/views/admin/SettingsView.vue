@@ -205,39 +205,59 @@
               </div>
 
               <div v-if="form.windows_ad_enabled" class="space-y-6 border-t border-gray-100 pt-4 dark:border-dark-700">
-                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">显示名称</label>
-                    <input v-model="form.windows_ad_provider_name" type="text" class="input" placeholder="Windows AD" />
-                  </div>
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">LDAP URL</label>
-                    <input v-model="form.windows_ad_url" type="text" class="input font-mono text-sm" placeholder="ldaps://ad.example.com:636" />
-                  </div>
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Base DN</label>
-                    <input v-model="form.windows_ad_base_dn" type="text" class="input font-mono text-sm" placeholder="DC=example,DC=com" />
+                <!-- 连接配置 -->
+                <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                  <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">连接配置</h3>
+                  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">AD 服务器地址 (LDAP URL)</label>
+                      <input v-model="form.windows_ad_url" type="text" class="input font-mono text-sm" placeholder="ldap://10.168.1.182:389" />
+                    </div>
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">显示名称</label>
+                      <input v-model="form.windows_ad_provider_name" type="text" class="input" placeholder="Windows AD" />
+                    </div>
                   </div>
                 </div>
 
-                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Bind DN</label>
-                    <input v-model="form.windows_ad_bind_dn" type="text" class="input font-mono text-sm" placeholder="CN=svc-sub2api,OU=Service,DC=example,DC=com" />
+                <!-- 绑定账号 -->
+                <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                  <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">绑定账号 (Bind Account)</h3>
+                  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">绑定账号 (Bind DN)</label>
+                      <input v-model="form.windows_ad_bind_dn" type="text" class="input font-mono text-sm" placeholder="CN=Administrator,CN=Users,DC=intra,DC=cowintech,DC=cn" />
+                    </div>
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">绑定密码</label>
+                      <input
+                        v-model="form.windows_ad_bind_password"
+                        type="password"
+                        class="input font-mono text-sm"
+                        :placeholder="form.windows_ad_bind_password_configured ? '********' : '输入服务账号密码'"
+                      />
+                      <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">留空则保留当前密码。</p>
+                    </div>
                   </div>
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Bind 密码</label>
-                    <input
-                      v-model="form.windows_ad_bind_password"
-                      type="password"
-                      class="input font-mono text-sm"
-                      :placeholder="form.windows_ad_bind_password_configured ? '********' : '服务账号密码'"
-                    />
-                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">留空则保留当前密码。</p>
-                  </div>
-                  <div>
-                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">用户过滤器</label>
-                    <input v-model="form.windows_ad_user_filter" type="text" class="input font-mono text-sm" placeholder="(sAMAccountName={username})" />
+                </div>
+
+                <!-- 用户搜索 -->
+                <div class="rounded-lg border border-gray-200 p-4 dark:border-dark-700">
+                  <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">用户搜索</h3>
+                  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Base DN</label>
+                      <input v-model="form.windows_ad_base_dn" type="text" class="input font-mono text-sm" placeholder="DC=intra,DC=cowintech,DC=cn" />
+                    </div>
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">用户搜索路径 (User Search Base)</label>
+                      <input v-model="form.windows_ad_user_search_base" type="text" class="input font-mono text-sm" placeholder="CN=Users,DC=intra,DC=cowintech,DC=cn" />
+                      <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">留空则使用 Base DN。</p>
+                    </div>
+                    <div>
+                      <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">用户搜索过滤器</label>
+                      <input v-model="form.windows_ad_user_filter" type="text" class="input font-mono text-sm" placeholder="(sAMAccountName={username})" />
+                    </div>
                   </div>
                 </div>
 
@@ -6405,6 +6425,7 @@ type SettingsForm = Omit<
   github_oauth_client_secret: string;
   google_oauth_client_secret: string;
   windows_ad_bind_password: string;
+  windows_ad_user_search_base: string;
   force_email_on_third_party_signup: boolean;
   openai_advanced_scheduler_enabled: boolean;
 };
@@ -6544,6 +6565,7 @@ const form = reactive<SettingsForm>({
   windows_ad_provider_name: "Windows AD",
   windows_ad_url: "",
   windows_ad_base_dn: "",
+  windows_ad_user_search_base: "",
   windows_ad_bind_dn: "",
   windows_ad_bind_password: "",
   windows_ad_bind_password_configured: false,
@@ -7647,6 +7669,7 @@ async function saveSettings() {
       windows_ad_provider_name: form.windows_ad_provider_name,
       windows_ad_url: form.windows_ad_url,
       windows_ad_base_dn: form.windows_ad_base_dn,
+      windows_ad_user_search_base: form.windows_ad_user_search_base,
       windows_ad_bind_dn: form.windows_ad_bind_dn,
       windows_ad_bind_password: form.windows_ad_bind_password || undefined,
       windows_ad_user_filter: form.windows_ad_user_filter,

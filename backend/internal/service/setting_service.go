@@ -1482,6 +1482,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyWindowsADProviderName] = strings.TrimSpace(firstNonEmpty(settings.WindowsADProviderName, defaultWindowsADProviderName))
 	updates[SettingKeyWindowsADURL] = strings.TrimSpace(settings.WindowsADURL)
 	updates[SettingKeyWindowsADBaseDN] = strings.TrimSpace(settings.WindowsADBaseDN)
+	updates[SettingKeyWindowsADUserSearchBase] = strings.TrimSpace(settings.WindowsADUserSearchBase)
 	updates[SettingKeyWindowsADBindDN] = strings.TrimSpace(settings.WindowsADBindDN)
 	if settings.WindowsADBindPassword != "" {
 		updates[SettingKeyWindowsADBindPassword] = strings.TrimSpace(settings.WindowsADBindPassword)

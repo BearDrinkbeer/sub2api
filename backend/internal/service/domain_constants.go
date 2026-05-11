@@ -187,6 +187,7 @@ const (
 	SettingKeyWindowsADProviderName      = "windows_ad_provider_name"
 	SettingKeyWindowsADURL               = "windows_ad_url"
 	SettingKeyWindowsADBaseDN            = "windows_ad_base_dn"
+	SettingKeyWindowsADUserSearchBase    = "windows_ad_user_search_base"
 	SettingKeyWindowsADBindDN            = "windows_ad_bind_dn"
 	SettingKeyWindowsADBindPassword      = "windows_ad_bind_password"
 	SettingKeyWindowsADUserFilter        = "windows_ad_user_filter"

@@ -177,6 +177,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		WindowsADProviderName:                  settings.WindowsADProviderName,
 		WindowsADURL:                           settings.WindowsADURL,
 		WindowsADBaseDN:                        settings.WindowsADBaseDN,
+		WindowsADUserSearchBase:                settings.WindowsADUserSearchBase,
 		WindowsADBindDN:                        settings.WindowsADBindDN,
 		WindowsADBindPasswordConfigured:        settings.WindowsADBindPasswordConfigured,
 		WindowsADUserFilter:                    settings.WindowsADUserFilter,
@@ -433,6 +434,7 @@ type UpdateSettingsRequest struct {
 	WindowsADProviderName      string `json:"windows_ad_provider_name"`
 	WindowsADURL               string `json:"windows_ad_url"`
 	WindowsADBaseDN            string `json:"windows_ad_base_dn"`
+	WindowsADUserSearchBase    string `json:"windows_ad_user_search_base"`
 	WindowsADBindDN            string `json:"windows_ad_bind_dn"`
 	WindowsADBindPassword      string `json:"windows_ad_bind_password"`
 	WindowsADUserFilter        string `json:"windows_ad_user_filter"`
@@ -1360,6 +1362,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		WindowsADProviderName:            strings.TrimSpace(firstNonEmpty(req.WindowsADProviderName, previousSettings.WindowsADProviderName, "Windows AD")),
 		WindowsADURL:                     strings.TrimSpace(firstNonEmpty(req.WindowsADURL, previousSettings.WindowsADURL)),
 		WindowsADBaseDN:                  strings.TrimSpace(firstNonEmpty(req.WindowsADBaseDN, previousSettings.WindowsADBaseDN)),
+		WindowsADUserSearchBase:          strings.TrimSpace(firstNonEmpty(req.WindowsADUserSearchBase, previousSettings.WindowsADUserSearchBase)),
 		WindowsADBindDN:                  strings.TrimSpace(firstNonEmpty(req.WindowsADBindDN, previousSettings.WindowsADBindDN)),
 		WindowsADBindPassword:            strings.TrimSpace(req.WindowsADBindPassword),
 		WindowsADUserFilter:              strings.TrimSpace(firstNonEmpty(req.WindowsADUserFilter, previousSettings.WindowsADUserFilter)),
@@ -1752,6 +1755,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		WindowsADProviderName:                  updatedSettings.WindowsADProviderName,
 		WindowsADURL:                           updatedSettings.WindowsADURL,
 		WindowsADBaseDN:                        updatedSettings.WindowsADBaseDN,
+		WindowsADUserSearchBase:                updatedSettings.WindowsADUserSearchBase,
 		WindowsADBindDN:                        updatedSettings.WindowsADBindDN,
 		WindowsADBindPasswordConfigured:        updatedSettings.WindowsADBindPasswordConfigured,
 		WindowsADUserFilter:                    updatedSettings.WindowsADUserFilter,

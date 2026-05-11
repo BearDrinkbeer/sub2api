@@ -65,8 +65,12 @@ func (a LDAPWindowsADAuthenticator) Authenticate(ctx context.Context, cfg config
 
 	filter := buildWindowsADUserFilter(cfg.UserFilter, username)
 	attrs := windowsADAttributes(cfg)
+	searchBase := strings.TrimSpace(cfg.UserSearchBase)
+	if searchBase == "" {
+		searchBase = strings.TrimSpace(cfg.BaseDN)
+	}
 	req := ldap.NewSearchRequest(
-		strings.TrimSpace(cfg.BaseDN),
+		searchBase,
 		ldap.ScopeWholeSubtree,
 		ldap.NeverDerefAliases,
 		2,
@@ -208,6 +212,7 @@ func (s *SettingService) GetWindowsADConfig(ctx context.Context) (config.Windows
 		SettingKeyWindowsADProviderName,
 		SettingKeyWindowsADURL,
 		SettingKeyWindowsADBaseDN,
+		SettingKeyWindowsADUserSearchBase,
 		SettingKeyWindowsADBindDN,
 		SettingKeyWindowsADBindPassword,
 		SettingKeyWindowsADUserFilter,
@@ -226,6 +231,7 @@ func (s *SettingService) GetWindowsADConfig(ctx context.Context) (config.Windows
 	effective.ProviderName = firstNonEmpty(settings[SettingKeyWindowsADProviderName], effective.ProviderName, defaultWindowsADProviderName)
 	effective.URL = firstNonEmpty(settings[SettingKeyWindowsADURL], effective.URL)
 	effective.BaseDN = firstNonEmpty(settings[SettingKeyWindowsADBaseDN], effective.BaseDN)
+	effective.UserSearchBase = firstNonEmpty(settings[SettingKeyWindowsADUserSearchBase], effective.UserSearchBase, effective.BaseDN)
 	effective.BindDN = firstNonEmpty(settings[SettingKeyWindowsADBindDN], effective.BindDN)
 	effective.BindPassword = firstNonEmpty(settings[SettingKeyWindowsADBindPassword], effective.BindPassword)
 	effective.UserFilter = firstNonEmpty(settings[SettingKeyWindowsADUserFilter], effective.UserFilter, defaultWindowsADUserFilter)
