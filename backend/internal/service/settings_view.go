@@ -98,6 +98,7 @@ type SystemSettings struct {
 	WindowsADProviderName           string
 	WindowsADURL                    string
 	WindowsADBaseDN                 string
+	WindowsADUserSearchBase         string
 	WindowsADBindDN                 string
 	WindowsADBindPassword           string
 	WindowsADBindPasswordConfigured bool
