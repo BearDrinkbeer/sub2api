@@ -444,6 +444,7 @@ export interface SystemSettings {
   windows_ad_url: string;
   windows_ad_base_dn: string;
   windows_ad_user_search_base: string;
+  windows_ad_group_search_base: string;
   windows_ad_bind_dn: string;
   windows_ad_bind_password_configured: boolean;
   windows_ad_user_filter: string;
@@ -666,6 +667,7 @@ export interface UpdateSettingsRequest {
   windows_ad_url?: string;
   windows_ad_base_dn?: string;
   windows_ad_user_search_base?: string;
+  windows_ad_group_search_base?: string;
   windows_ad_bind_dn?: string;
   windows_ad_bind_password?: string;
   windows_ad_user_filter?: string;

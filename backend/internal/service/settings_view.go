@@ -94,11 +94,12 @@ type SystemSettings struct {
 	OIDCConnectUserInfoUsernamePath   string
 
 	// Windows AD 域登录
-	WindowsADEnabled              bool
+	WindowsADEnabled                bool
 	WindowsADProviderName           string
 	WindowsADURL                    string
 	WindowsADBaseDN                 string
 	WindowsADUserSearchBase         string
+	WindowsADGroupSearchBase        string
 	WindowsADBindDN                 string
 	WindowsADBindPassword           string
 	WindowsADBindPasswordConfigured bool
@@ -258,7 +259,7 @@ type PublicSettings struct {
 	PaymentEnabled           bool
 	OIDCOAuthEnabled         bool
 	OIDCOAuthProviderName    string
-	WindowsADEnabled              bool
+	WindowsADEnabled         bool
 	WindowsADProviderName    string
 	GitHubOAuthEnabled       bool
 	GoogleOAuthEnabled       bool

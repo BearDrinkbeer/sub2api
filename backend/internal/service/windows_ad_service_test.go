@@ -16,6 +16,12 @@ func TestBuildWindowsADUserFilterEscapesUsername(t *testing.T) {
 	require.NotContains(t, strings.TrimPrefix(filter, "(sAMAccountName="), "alice*)")
 }
 
+func TestBuildWindowsADUserFilterSupportsDoubleBracePlaceholder(t *testing.T) {
+	filter := buildWindowsADUserFilter("(sAMAccountName={{username}})", "zhangsan")
+
+	require.Equal(t, "(sAMAccountName=zhangsan)", filter)
+}
+
 func TestWindowsADSyntheticEmailUsesReservedDomain(t *testing.T) {
 	require.Equal(t, "objectguid-abcd"+WindowsADSyntheticEmailDomain, windowsADSyntheticEmail("objectGUID:abcd"))
 }

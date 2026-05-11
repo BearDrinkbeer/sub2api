@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/mail"
 	"strings"
 	"time"
@@ -46,6 +48,7 @@ func (a LDAPWindowsADAuthenticator) Authenticate(ctx context.Context, cfg config
 	tlsConfig := &tls.Config{InsecureSkipVerify: cfg.SkipTLSVerify}
 	conn, err := ldap.DialURL(strings.TrimSpace(cfg.URL), ldap.DialWithTLSConfig(tlsConfig))
 	if err != nil {
+		logWindowsADFailure("connect", cfg, "", err, nil)
 		return nil, infraerrors.ServiceUnavailable("WINDOWS_AD_CONNECT_FAILED", "failed to connect windows ad").WithCause(err)
 	}
 	defer func() { _ = conn.Close() }()
@@ -53,12 +56,14 @@ func (a LDAPWindowsADAuthenticator) Authenticate(ctx context.Context, cfg config
 
 	if cfg.StartTLS && !strings.HasPrefix(strings.ToLower(strings.TrimSpace(cfg.URL)), "ldaps://") {
 		if err := conn.StartTLS(tlsConfig); err != nil {
+			logWindowsADFailure("start_tls", cfg, "", err, nil)
 			return nil, infraerrors.ServiceUnavailable("WINDOWS_AD_TLS_FAILED", "failed to start windows ad tls").WithCause(err)
 		}
 	}
 
 	if bindDN := strings.TrimSpace(cfg.BindDN); bindDN != "" {
 		if err := conn.Bind(bindDN, cfg.BindPassword); err != nil {
+			logWindowsADFailure("service_bind", cfg, "", err, nil)
 			return nil, infraerrors.ServiceUnavailable("WINDOWS_AD_BIND_FAILED", "failed to bind windows ad service account").WithCause(err)
 		}
 	}
@@ -82,13 +87,23 @@ func (a LDAPWindowsADAuthenticator) Authenticate(ctx context.Context, cfg config
 	)
 	res, err := conn.Search(req)
 	if err != nil {
+		logWindowsADFailure("user_search", cfg, searchBase, err, map[string]any{
+			"filter_template": normalizeWindowsADUserFilterTemplate(cfg.UserFilter),
+		})
 		return nil, infraerrors.Unauthorized("INVALID_CREDENTIALS", "invalid username or password").WithCause(err)
 	}
 	if len(res.Entries) != 1 {
+		logWindowsADFailure("user_search_result", cfg, searchBase, nil, map[string]any{
+			"entries":         len(res.Entries),
+			"filter_template": normalizeWindowsADUserFilterTemplate(cfg.UserFilter),
+		})
 		return nil, infraerrors.Unauthorized("INVALID_CREDENTIALS", "invalid username or password")
 	}
 	entry := res.Entries[0]
 	if err := conn.Bind(entry.DN, password); err != nil {
+		logWindowsADFailure("user_bind", cfg, searchBase, err, map[string]any{
+			"user_dn": entry.DN,
+		})
 		return nil, infraerrors.Unauthorized("INVALID_CREDENTIALS", "invalid username or password").WithCause(err)
 	}
 
@@ -109,15 +124,55 @@ func firstPositiveDuration(values ...time.Duration) time.Duration {
 }
 
 func buildWindowsADUserFilter(template, username string) string {
-	template = strings.TrimSpace(template)
+	template = normalizeWindowsADUserFilterTemplate(template)
 	if template == "" {
 		template = defaultWindowsADUserFilter
 	}
 	escaped := ldap.EscapeFilter(strings.TrimSpace(username))
+	if strings.Contains(template, "{{username}}") {
+		return strings.ReplaceAll(template, "{{username}}", escaped)
+	}
 	if strings.Contains(template, "{username}") {
 		return strings.ReplaceAll(template, "{username}", escaped)
 	}
 	return fmt.Sprintf("(&(%s)(|(sAMAccountName=%s)(userPrincipalName=%s)))", template, escaped, escaped)
+}
+
+func normalizeWindowsADUserFilterTemplate(template string) string {
+	template = strings.TrimSpace(template)
+	if template == "" {
+		return ""
+	}
+	return strings.ReplaceAll(template, "{{ username }}", "{{username}}")
+}
+
+func logWindowsADFailure(stage string, cfg config.WindowsADConfig, searchBase string, err error, extra map[string]any) {
+	attrs := []any{
+		"component", "service.windows_ad",
+		"stage", stage,
+		"url", strings.TrimSpace(cfg.URL),
+		"base_dn", strings.TrimSpace(cfg.BaseDN),
+		"user_search_base", strings.TrimSpace(searchBase),
+		"start_tls", cfg.StartTLS,
+	}
+	if err != nil {
+		attrs = append(attrs, "error", err.Error())
+		if code, ok := windowsADLDAPResultCode(err); ok {
+			attrs = append(attrs, "ldap_result_code", code)
+		}
+	}
+	for key, value := range extra {
+		attrs = append(attrs, key, value)
+	}
+	slog.Warn("windows_ad.authentication_failed", attrs...)
+}
+
+func windowsADLDAPResultCode(err error) (uint16, bool) {
+	var ldapErr *ldap.Error
+	if errors.As(err, &ldapErr) && ldapErr != nil {
+		return ldapErr.ResultCode, true
+	}
+	return 0, false
 }
 
 func windowsADAttributes(cfg config.WindowsADConfig) []string {
@@ -213,6 +268,7 @@ func (s *SettingService) GetWindowsADConfig(ctx context.Context) (config.Windows
 		SettingKeyWindowsADURL,
 		SettingKeyWindowsADBaseDN,
 		SettingKeyWindowsADUserSearchBase,
+		SettingKeyWindowsADGroupSearchBase,
 		SettingKeyWindowsADBindDN,
 		SettingKeyWindowsADBindPassword,
 		SettingKeyWindowsADUserFilter,
@@ -232,6 +288,7 @@ func (s *SettingService) GetWindowsADConfig(ctx context.Context) (config.Windows
 	effective.URL = firstNonEmpty(settings[SettingKeyWindowsADURL], effective.URL)
 	effective.BaseDN = firstNonEmpty(settings[SettingKeyWindowsADBaseDN], effective.BaseDN)
 	effective.UserSearchBase = firstNonEmpty(settings[SettingKeyWindowsADUserSearchBase], effective.UserSearchBase, effective.BaseDN)
+	effective.GroupSearchBase = firstNonEmpty(settings[SettingKeyWindowsADGroupSearchBase], effective.GroupSearchBase)
 	effective.BindDN = firstNonEmpty(settings[SettingKeyWindowsADBindDN], effective.BindDN)
 	effective.BindPassword = firstNonEmpty(settings[SettingKeyWindowsADBindPassword], effective.BindPassword)
 	effective.UserFilter = firstNonEmpty(settings[SettingKeyWindowsADUserFilter], effective.UserFilter, defaultWindowsADUserFilter)

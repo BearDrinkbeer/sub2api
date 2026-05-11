@@ -903,7 +903,7 @@ type PublicSettingsInjectionPayload struct {
 	WeChatOAuthMobileEnabled         bool                     `json:"wechat_oauth_mobile_enabled"`
 	OIDCOAuthEnabled                 bool                     `json:"oidc_oauth_enabled"`
 	OIDCOAuthProviderName            string                   `json:"oidc_oauth_provider_name"`
-	WindowsADEnabled                bool                     `json:"windows_ad_enabled"`
+	WindowsADEnabled                 bool                     `json:"windows_ad_enabled"`
 	WindowsADProviderName            string                   `json:"windows_ad_provider_name"`
 	GitHubOAuthEnabled               bool                     `json:"github_oauth_enabled"`
 	GoogleOAuthEnabled               bool                     `json:"google_oauth_enabled"`
@@ -1483,6 +1483,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyWindowsADURL] = strings.TrimSpace(settings.WindowsADURL)
 	updates[SettingKeyWindowsADBaseDN] = strings.TrimSpace(settings.WindowsADBaseDN)
 	updates[SettingKeyWindowsADUserSearchBase] = strings.TrimSpace(settings.WindowsADUserSearchBase)
+	updates[SettingKeyWindowsADGroupSearchBase] = strings.TrimSpace(settings.WindowsADGroupSearchBase)
 	updates[SettingKeyWindowsADBindDN] = strings.TrimSpace(settings.WindowsADBindDN)
 	if settings.WindowsADBindPassword != "" {
 		updates[SettingKeyWindowsADBindPassword] = strings.TrimSpace(settings.WindowsADBindPassword)
@@ -2349,6 +2350,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyWindowsADProviderName:                      defaultWindowsADProviderName,
 		SettingKeyWindowsADURL:                               "",
 		SettingKeyWindowsADBaseDN:                            "",
+		SettingKeyWindowsADUserSearchBase:                    "",
+		SettingKeyWindowsADGroupSearchBase:                   "",
 		SettingKeyWindowsADBindDN:                            "",
 		SettingKeyWindowsADBindPassword:                      "",
 		SettingKeyWindowsADUserFilter:                        defaultWindowsADUserFilter,
@@ -2720,6 +2723,8 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	result.WindowsADProviderName = firstNonEmpty(settings[SettingKeyWindowsADProviderName], windowsADBase.ProviderName, defaultWindowsADProviderName)
 	result.WindowsADURL = firstNonEmpty(settings[SettingKeyWindowsADURL], windowsADBase.URL)
 	result.WindowsADBaseDN = firstNonEmpty(settings[SettingKeyWindowsADBaseDN], windowsADBase.BaseDN)
+	result.WindowsADUserSearchBase = firstNonEmpty(settings[SettingKeyWindowsADUserSearchBase], windowsADBase.UserSearchBase)
+	result.WindowsADGroupSearchBase = firstNonEmpty(settings[SettingKeyWindowsADGroupSearchBase], windowsADBase.GroupSearchBase)
 	result.WindowsADBindDN = firstNonEmpty(settings[SettingKeyWindowsADBindDN], windowsADBase.BindDN)
 	result.WindowsADBindPassword = firstNonEmpty(settings[SettingKeyWindowsADBindPassword], windowsADBase.BindPassword)
 	result.WindowsADBindPasswordConfigured = result.WindowsADBindPassword != ""
