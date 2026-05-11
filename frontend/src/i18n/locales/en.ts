@@ -409,6 +409,9 @@ export default {
     emailRequired: 'Email is required',
     invalidEmail: 'Please enter a valid email address',
     passwordRequired: 'Password is required',
+    windowsADUsernamePlaceholder: 'Domain account / UPN',
+    windowsADSignIn: 'Sign in with {provider}',
+    windowsADRequired: 'Enter your domain account and password',
     passwordMinLength: 'Password must be at least 6 characters',
     loginFailed: 'Login failed. Please check your credentials and try again.',
     errors: {

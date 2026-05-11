@@ -347,6 +347,8 @@ export const useAppStore = defineStore('app', () => {
         wechat_oauth_mobile_enabled: false,
         oidc_oauth_enabled: false,
         oidc_oauth_provider_name: 'OIDC',
+        windows_ad_oauth_enabled: false,
+        windows_ad_provider_name: 'Windows AD',
         github_oauth_enabled: false,
         google_oauth_enabled: false,
         backend_mode_enabled: false,

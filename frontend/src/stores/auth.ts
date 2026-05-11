@@ -6,7 +6,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { authAPI, isTotp2FARequired, type LoginResponse } from '@/api'
-import type { User, LoginRequest, RegisterRequest, AuthResponse } from '@/types'
+import type { User, LoginRequest, RegisterRequest, AuthResponse, WindowsADLoginRequest } from '@/types'
 
 const AUTH_TOKEN_KEY = 'auth_token'
 const AUTH_USER_KEY = 'auth_user'
@@ -257,6 +257,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function loginWindowsAD(credentials: WindowsADLoginRequest): Promise<LoginResponse> {
+    try {
+      const response = await authAPI.loginWindowsAD(credentials)
+      if (isTotp2FARequired(response)) {
+        return response
+      }
+      setAuthFromResponse(response)
+      return response
+    } catch (error) {
+      clearAuth({ preservePendingAuthSession: pendingAuthSession.value !== null })
+      throw error
+    }
+  }
+
   /**
    * Complete login with 2FA code
    * @param tempToken - Temporary token from initial login
@@ -481,6 +495,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Actions
     login,
+    loginWindowsAD,
     login2FA,
     register,
     setToken,

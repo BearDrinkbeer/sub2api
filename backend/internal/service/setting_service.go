@@ -132,6 +132,7 @@ type AuthSourceDefaultSettings struct {
 	WeChat                       ProviderDefaultGrantSettings
 	GitHub                       ProviderDefaultGrantSettings
 	Google                       ProviderDefaultGrantSettings
+	WindowsAD                    ProviderDefaultGrantSettings
 	ForceEmailOnThirdPartySignup bool
 }
 
@@ -186,6 +187,13 @@ var (
 		grantOnSignup:    SettingKeyAuthSourceDefaultGoogleGrantOnSignup,
 		grantOnFirstBind: SettingKeyAuthSourceDefaultGoogleGrantOnFirstBind,
 	}
+	windowsADAuthSourceDefaultKeys = authSourceDefaultKeySet{
+		balance:          SettingKeyAuthSourceDefaultWindowsADBalance,
+		concurrency:      SettingKeyAuthSourceDefaultWindowsADConcurrency,
+		subscriptions:    SettingKeyAuthSourceDefaultWindowsADSubscriptions,
+		grantOnSignup:    SettingKeyAuthSourceDefaultWindowsADGrantOnSignup,
+		grantOnFirstBind: SettingKeyAuthSourceDefaultWindowsADGrantOnFirstBind,
+	}
 )
 
 const (
@@ -205,6 +213,8 @@ const (
 	defaultGoogleOAuthUserInfo   = "https://openidconnect.googleapis.com/v1/userinfo"
 	defaultGoogleOAuthScopes     = "openid email profile"
 	defaultGoogleOAuthFrontend   = "/auth/oauth/callback"
+	defaultWindowsADProviderName = "Windows AD"
+	defaultWindowsADUserFilter   = "(&(objectClass=user)(!(objectClass=computer))(|(sAMAccountName={username})(userPrincipalName={username})))"
 	defaultLoginAgreementMode    = "modal"
 	defaultLoginAgreementDate    = "2026-03-31"
 )
@@ -265,6 +275,13 @@ func normalizeLoginAgreementDocumentID(raw string) string {
 		}
 	}
 	return strings.Trim(b.String(), "-_")
+}
+
+func boolSettingOrDefault(settings map[string]string, key string, fallback bool) bool {
+	if raw, ok := settings[key]; ok {
+		return raw == "true"
+	}
+	return fallback
 }
 
 func normalizeLoginAgreementDocuments(docs []LoginAgreementDocument) []LoginAgreementDocument {
@@ -612,6 +629,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingPaymentEnabled,
 		SettingKeyOIDCConnectEnabled,
 		SettingKeyOIDCConnectProviderName,
+		SettingKeyWindowsADEnabled,
+		SettingKeyWindowsADProviderName,
 		SettingKeyGitHubOAuthEnabled,
 		SettingKeyGitHubOAuthClientID,
 		SettingKeyGitHubOAuthClientSecret,
@@ -652,6 +671,19 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	}
 	if oidcProviderName == "" {
 		oidcProviderName = "OIDC"
+	}
+	windowsADEnabled := false
+	if raw, ok := settings[SettingKeyWindowsADEnabled]; ok {
+		windowsADEnabled = raw == "true"
+	} else {
+		windowsADEnabled = s.cfg != nil && s.cfg.WindowsAD.Enabled
+	}
+	windowsADProviderName := strings.TrimSpace(settings[SettingKeyWindowsADProviderName])
+	if windowsADProviderName == "" && s.cfg != nil {
+		windowsADProviderName = strings.TrimSpace(s.cfg.WindowsAD.ProviderName)
+	}
+	if windowsADProviderName == "" {
+		windowsADProviderName = defaultWindowsADProviderName
 	}
 	gitHubEnabled := s.emailOAuthPublicEnabled(settings, "github")
 	googleEnabled := s.emailOAuthPublicEnabled(settings, "google")
@@ -717,6 +749,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		PaymentEnabled:                   settings[SettingPaymentEnabled] == "true",
 		OIDCOAuthEnabled:                 oidcEnabled,
 		OIDCOAuthProviderName:            oidcProviderName,
+		WindowsADOAuthEnabled:            windowsADEnabled,
+		WindowsADProviderName:            windowsADProviderName,
 		GitHubOAuthEnabled:               gitHubEnabled,
 		GoogleOAuthEnabled:               googleEnabled,
 		BalanceLowNotifyEnabled:          settings[SettingKeyBalanceLowNotifyEnabled] == "true",
@@ -869,6 +903,8 @@ type PublicSettingsInjectionPayload struct {
 	WeChatOAuthMobileEnabled         bool                     `json:"wechat_oauth_mobile_enabled"`
 	OIDCOAuthEnabled                 bool                     `json:"oidc_oauth_enabled"`
 	OIDCOAuthProviderName            string                   `json:"oidc_oauth_provider_name"`
+	WindowsADOAuthEnabled            bool                     `json:"windows_ad_oauth_enabled"`
+	WindowsADProviderName            string                   `json:"windows_ad_provider_name"`
 	GitHubOAuthEnabled               bool                     `json:"github_oauth_enabled"`
 	GoogleOAuthEnabled               bool                     `json:"google_oauth_enabled"`
 	BackendModeEnabled               bool                     `json:"backend_mode_enabled"`
@@ -933,6 +969,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		WeChatOAuthMobileEnabled:         settings.WeChatOAuthMobileEnabled,
 		OIDCOAuthEnabled:                 settings.OIDCOAuthEnabled,
 		OIDCOAuthProviderName:            settings.OIDCOAuthProviderName,
+		WindowsADOAuthEnabled:            settings.WindowsADOAuthEnabled,
+		WindowsADProviderName:            settings.WindowsADProviderName,
 		GitHubOAuthEnabled:               settings.GitHubOAuthEnabled,
 		GoogleOAuthEnabled:               settings.GoogleOAuthEnabled,
 		BackendModeEnabled:               settings.BackendModeEnabled,
@@ -1439,6 +1477,23 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 		updates[SettingKeyOIDCConnectClientSecret] = settings.OIDCConnectClientSecret
 	}
 
+	// Windows AD 域登录（绑定密码只有非空才更新）
+	updates[SettingKeyWindowsADEnabled] = strconv.FormatBool(settings.WindowsADEnabled)
+	updates[SettingKeyWindowsADProviderName] = strings.TrimSpace(firstNonEmpty(settings.WindowsADProviderName, defaultWindowsADProviderName))
+	updates[SettingKeyWindowsADURL] = strings.TrimSpace(settings.WindowsADURL)
+	updates[SettingKeyWindowsADBaseDN] = strings.TrimSpace(settings.WindowsADBaseDN)
+	updates[SettingKeyWindowsADBindDN] = strings.TrimSpace(settings.WindowsADBindDN)
+	if settings.WindowsADBindPassword != "" {
+		updates[SettingKeyWindowsADBindPassword] = strings.TrimSpace(settings.WindowsADBindPassword)
+	}
+	updates[SettingKeyWindowsADUserFilter] = strings.TrimSpace(firstNonEmpty(settings.WindowsADUserFilter, defaultWindowsADUserFilter))
+	updates[SettingKeyWindowsADEmailAttribute] = strings.TrimSpace(firstNonEmpty(settings.WindowsADEmailAttribute, "mail"))
+	updates[SettingKeyWindowsADUsernameAttribute] = strings.TrimSpace(firstNonEmpty(settings.WindowsADUsernameAttribute, "sAMAccountName"))
+	updates[SettingKeyWindowsADDisplayAttribute] = strings.TrimSpace(firstNonEmpty(settings.WindowsADDisplayAttribute, "displayName"))
+	updates[SettingKeyWindowsADIDAttribute] = strings.TrimSpace(firstNonEmpty(settings.WindowsADIDAttribute, "objectGUID"))
+	updates[SettingKeyWindowsADStartTLS] = strconv.FormatBool(settings.WindowsADStartTLS)
+	updates[SettingKeyWindowsADSkipTLSVerify] = strconv.FormatBool(settings.WindowsADSkipTLSVerify)
+
 	// GitHub / Google 邮箱快捷登录
 	updates[SettingKeyGitHubOAuthEnabled] = strconv.FormatBool(settings.GitHubOAuthEnabled)
 	updates[SettingKeyGitHubOAuthClientID] = strings.TrimSpace(settings.GitHubOAuthClientID)
@@ -1612,19 +1667,21 @@ func (s *SettingService) buildAuthSourceDefaultUpdates(ctx context.Context, sett
 		settings.WeChat.Subscriptions,
 		settings.GitHub.Subscriptions,
 		settings.Google.Subscriptions,
+		settings.WindowsAD.Subscriptions,
 	} {
 		if err := s.validateDefaultSubscriptionGroups(ctx, subscriptions); err != nil {
 			return nil, err
 		}
 	}
 
-	updates := make(map[string]string, 31)
+	updates := make(map[string]string, 36)
 	writeProviderDefaultGrantUpdates(updates, emailAuthSourceDefaultKeys, settings.Email)
 	writeProviderDefaultGrantUpdates(updates, linuxDoAuthSourceDefaultKeys, settings.LinuxDo)
 	writeProviderDefaultGrantUpdates(updates, oidcAuthSourceDefaultKeys, settings.OIDC)
 	writeProviderDefaultGrantUpdates(updates, weChatAuthSourceDefaultKeys, settings.WeChat)
 	writeProviderDefaultGrantUpdates(updates, gitHubAuthSourceDefaultKeys, settings.GitHub)
 	writeProviderDefaultGrantUpdates(updates, googleAuthSourceDefaultKeys, settings.Google)
+	writeProviderDefaultGrantUpdates(updates, windowsADAuthSourceDefaultKeys, settings.WindowsAD)
 	updates[SettingKeyForceEmailOnThirdPartySignup] = strconv.FormatBool(settings.ForceEmailOnThirdPartySignup)
 	return updates, nil
 }
@@ -2126,6 +2183,11 @@ func (s *SettingService) GetAuthSourceDefaultSettings(ctx context.Context) (*Aut
 		SettingKeyAuthSourceDefaultGoogleSubscriptions,
 		SettingKeyAuthSourceDefaultGoogleGrantOnSignup,
 		SettingKeyAuthSourceDefaultGoogleGrantOnFirstBind,
+		SettingKeyAuthSourceDefaultWindowsADBalance,
+		SettingKeyAuthSourceDefaultWindowsADConcurrency,
+		SettingKeyAuthSourceDefaultWindowsADSubscriptions,
+		SettingKeyAuthSourceDefaultWindowsADGrantOnSignup,
+		SettingKeyAuthSourceDefaultWindowsADGrantOnFirstBind,
 		SettingKeyForceEmailOnThirdPartySignup,
 	}
 
@@ -2141,6 +2203,7 @@ func (s *SettingService) GetAuthSourceDefaultSettings(ctx context.Context) (*Aut
 		WeChat:                       parseProviderDefaultGrantSettings(settings, weChatAuthSourceDefaultKeys),
 		GitHub:                       parseProviderDefaultGrantSettings(settings, gitHubAuthSourceDefaultKeys),
 		Google:                       parseProviderDefaultGrantSettings(settings, googleAuthSourceDefaultKeys),
+		WindowsAD:                    parseProviderDefaultGrantSettings(settings, windowsADAuthSourceDefaultKeys),
 		ForceEmailOnThirdPartySignup: settings[SettingKeyForceEmailOnThirdPartySignup] == "true",
 	}, nil
 }
@@ -2217,111 +2280,129 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 
 	// 初始化默认设置
 	defaults := map[string]string{
-		SettingKeyRegistrationEnabled:                      "true",
-		SettingKeyEmailVerifyEnabled:                       "false",
-		SettingKeyRegistrationEmailSuffixWhitelist:         "[]",
-		SettingKeyPromoCodeEnabled:                         "true", // 默认启用优惠码功能
-		SettingKeyLoginAgreementEnabled:                    "false",
-		SettingKeyLoginAgreementMode:                       defaultLoginAgreementMode,
-		SettingKeyLoginAgreementUpdatedAt:                  defaultLoginAgreementDate,
-		SettingKeyLoginAgreementDocuments:                  loginAgreementDocumentsJSON,
-		SettingKeySiteName:                                 "Sub2API",
-		SettingKeySiteLogo:                                 "",
-		SettingKeyPurchaseSubscriptionEnabled:              "false",
-		SettingKeyPurchaseSubscriptionURL:                  "",
-		SettingKeyTableDefaultPageSize:                     "20",
-		SettingKeyTablePageSizeOptions:                     "[10,20,50,100]",
-		SettingKeyCustomMenuItems:                          "[]",
-		SettingKeyCustomEndpoints:                          "[]",
-		SettingKeyWeChatConnectEnabled:                     "false",
-		SettingKeyWeChatConnectAppID:                       "",
-		SettingKeyWeChatConnectAppSecret:                   "",
-		SettingKeyWeChatConnectOpenAppID:                   "",
-		SettingKeyWeChatConnectOpenAppSecret:               "",
-		SettingKeyWeChatConnectMPAppID:                     "",
-		SettingKeyWeChatConnectMPAppSecret:                 "",
-		SettingKeyWeChatConnectMobileAppID:                 "",
-		SettingKeyWeChatConnectMobileAppSecret:             "",
-		SettingKeyWeChatConnectOpenEnabled:                 "false",
-		SettingKeyWeChatConnectMPEnabled:                   "false",
-		SettingKeyWeChatConnectMobileEnabled:               "false",
-		SettingKeyWeChatConnectMode:                        "open",
-		SettingKeyWeChatConnectScopes:                      "snsapi_login",
-		SettingKeyWeChatConnectRedirectURL:                 "",
-		SettingKeyWeChatConnectFrontendRedirectURL:         defaultWeChatConnectFrontend,
-		SettingKeyGitHubOAuthEnabled:                       "false",
-		SettingKeyGitHubOAuthClientID:                      "",
-		SettingKeyGitHubOAuthClientSecret:                  "",
-		SettingKeyGitHubOAuthRedirectURL:                   "",
-		SettingKeyGitHubOAuthFrontendRedirectURL:           defaultGitHubOAuthFrontend,
-		SettingKeyGoogleOAuthEnabled:                       "false",
-		SettingKeyGoogleOAuthClientID:                      "",
-		SettingKeyGoogleOAuthClientSecret:                  "",
-		SettingKeyGoogleOAuthRedirectURL:                   "",
-		SettingKeyGoogleOAuthFrontendRedirectURL:           defaultGoogleOAuthFrontend,
-		SettingKeyOIDCConnectEnabled:                       "false",
-		SettingKeyOIDCConnectProviderName:                  "OIDC",
-		SettingKeyOIDCConnectClientID:                      "",
-		SettingKeyOIDCConnectClientSecret:                  "",
-		SettingKeyOIDCConnectIssuerURL:                     "",
-		SettingKeyOIDCConnectDiscoveryURL:                  "",
-		SettingKeyOIDCConnectAuthorizeURL:                  "",
-		SettingKeyOIDCConnectTokenURL:                      "",
-		SettingKeyOIDCConnectUserInfoURL:                   "",
-		SettingKeyOIDCConnectJWKSURL:                       "",
-		SettingKeyOIDCConnectScopes:                        "openid email profile",
-		SettingKeyOIDCConnectRedirectURL:                   "",
-		SettingKeyOIDCConnectFrontendRedirectURL:           "/auth/oidc/callback",
-		SettingKeyOIDCConnectTokenAuthMethod:               "client_secret_post",
-		SettingKeyOIDCConnectUsePKCE:                       strconv.FormatBool(oidcUsePKCEDefault),
-		SettingKeyOIDCConnectValidateIDToken:               strconv.FormatBool(oidcValidateIDTokenDefault),
-		SettingKeyOIDCConnectAllowedSigningAlgs:            "RS256,ES256,PS256",
-		SettingKeyOIDCConnectClockSkewSeconds:              "120",
-		SettingKeyOIDCConnectRequireEmailVerified:          "false",
-		SettingKeyOIDCConnectUserInfoEmailPath:             "",
-		SettingKeyOIDCConnectUserInfoIDPath:                "",
-		SettingKeyOIDCConnectUserInfoUsernamePath:          "",
-		SettingKeyDefaultConcurrency:                       strconv.Itoa(s.cfg.Default.UserConcurrency),
-		SettingKeyDefaultBalance:                           strconv.FormatFloat(s.cfg.Default.UserBalance, 'f', 8, 64),
-		SettingKeyAffiliateRebateRate:                      strconv.FormatFloat(AffiliateRebateRateDefault, 'f', 8, 64),
-		SettingKeyAffiliateRebateFreezeHours:               strconv.Itoa(AffiliateRebateFreezeHoursDefault),
-		SettingKeyAffiliateRebateDurationDays:              strconv.Itoa(AffiliateRebateDurationDaysDefault),
-		SettingKeyAffiliateRebatePerInviteeCap:             strconv.FormatFloat(AffiliateRebatePerInviteeCapDefault, 'f', 2, 64),
-		SettingKeyDefaultUserRPMLimit:                      "0",
-		SettingKeyDefaultSubscriptions:                     "[]",
-		SettingKeyAuthSourceDefaultEmailBalance:            "0",
-		SettingKeyAuthSourceDefaultEmailConcurrency:        "5",
-		SettingKeyAuthSourceDefaultEmailSubscriptions:      "[]",
-		SettingKeyAuthSourceDefaultEmailGrantOnSignup:      "false",
-		SettingKeyAuthSourceDefaultEmailGrantOnFirstBind:   "false",
-		SettingKeyAuthSourceDefaultLinuxDoBalance:          "0",
-		SettingKeyAuthSourceDefaultLinuxDoConcurrency:      "5",
-		SettingKeyAuthSourceDefaultLinuxDoSubscriptions:    "[]",
-		SettingKeyAuthSourceDefaultLinuxDoGrantOnSignup:    "false",
-		SettingKeyAuthSourceDefaultLinuxDoGrantOnFirstBind: "false",
-		SettingKeyAuthSourceDefaultOIDCBalance:             "0",
-		SettingKeyAuthSourceDefaultOIDCConcurrency:         "5",
-		SettingKeyAuthSourceDefaultOIDCSubscriptions:       "[]",
-		SettingKeyAuthSourceDefaultOIDCGrantOnSignup:       "false",
-		SettingKeyAuthSourceDefaultOIDCGrantOnFirstBind:    "false",
-		SettingKeyAuthSourceDefaultWeChatBalance:           "0",
-		SettingKeyAuthSourceDefaultWeChatConcurrency:       "5",
-		SettingKeyAuthSourceDefaultWeChatSubscriptions:     "[]",
-		SettingKeyAuthSourceDefaultWeChatGrantOnSignup:     "false",
-		SettingKeyAuthSourceDefaultWeChatGrantOnFirstBind:  "false",
-		SettingKeyAuthSourceDefaultGitHubBalance:           "0",
-		SettingKeyAuthSourceDefaultGitHubConcurrency:       "5",
-		SettingKeyAuthSourceDefaultGitHubSubscriptions:     "[]",
-		SettingKeyAuthSourceDefaultGitHubGrantOnSignup:     "false",
-		SettingKeyAuthSourceDefaultGitHubGrantOnFirstBind:  "false",
-		SettingKeyAuthSourceDefaultGoogleBalance:           "0",
-		SettingKeyAuthSourceDefaultGoogleConcurrency:       "5",
-		SettingKeyAuthSourceDefaultGoogleSubscriptions:     "[]",
-		SettingKeyAuthSourceDefaultGoogleGrantOnSignup:     "false",
-		SettingKeyAuthSourceDefaultGoogleGrantOnFirstBind:  "false",
-		SettingKeyForceEmailOnThirdPartySignup:             "false",
-		SettingKeySMTPPort:                                 "587",
-		SettingKeySMTPUseTLS:                               "false",
+		SettingKeyRegistrationEnabled:                        "true",
+		SettingKeyEmailVerifyEnabled:                         "false",
+		SettingKeyRegistrationEmailSuffixWhitelist:           "[]",
+		SettingKeyPromoCodeEnabled:                           "true", // 默认启用优惠码功能
+		SettingKeyLoginAgreementEnabled:                      "false",
+		SettingKeyLoginAgreementMode:                         defaultLoginAgreementMode,
+		SettingKeyLoginAgreementUpdatedAt:                    defaultLoginAgreementDate,
+		SettingKeyLoginAgreementDocuments:                    loginAgreementDocumentsJSON,
+		SettingKeySiteName:                                   "Sub2API",
+		SettingKeySiteLogo:                                   "",
+		SettingKeyPurchaseSubscriptionEnabled:                "false",
+		SettingKeyPurchaseSubscriptionURL:                    "",
+		SettingKeyTableDefaultPageSize:                       "20",
+		SettingKeyTablePageSizeOptions:                       "[10,20,50,100]",
+		SettingKeyCustomMenuItems:                            "[]",
+		SettingKeyCustomEndpoints:                            "[]",
+		SettingKeyWeChatConnectEnabled:                       "false",
+		SettingKeyWeChatConnectAppID:                         "",
+		SettingKeyWeChatConnectAppSecret:                     "",
+		SettingKeyWeChatConnectOpenAppID:                     "",
+		SettingKeyWeChatConnectOpenAppSecret:                 "",
+		SettingKeyWeChatConnectMPAppID:                       "",
+		SettingKeyWeChatConnectMPAppSecret:                   "",
+		SettingKeyWeChatConnectMobileAppID:                   "",
+		SettingKeyWeChatConnectMobileAppSecret:               "",
+		SettingKeyWeChatConnectOpenEnabled:                   "false",
+		SettingKeyWeChatConnectMPEnabled:                     "false",
+		SettingKeyWeChatConnectMobileEnabled:                 "false",
+		SettingKeyWeChatConnectMode:                          "open",
+		SettingKeyWeChatConnectScopes:                        "snsapi_login",
+		SettingKeyWeChatConnectRedirectURL:                   "",
+		SettingKeyWeChatConnectFrontendRedirectURL:           defaultWeChatConnectFrontend,
+		SettingKeyGitHubOAuthEnabled:                         "false",
+		SettingKeyGitHubOAuthClientID:                        "",
+		SettingKeyGitHubOAuthClientSecret:                    "",
+		SettingKeyGitHubOAuthRedirectURL:                     "",
+		SettingKeyGitHubOAuthFrontendRedirectURL:             defaultGitHubOAuthFrontend,
+		SettingKeyGoogleOAuthEnabled:                         "false",
+		SettingKeyGoogleOAuthClientID:                        "",
+		SettingKeyGoogleOAuthClientSecret:                    "",
+		SettingKeyGoogleOAuthRedirectURL:                     "",
+		SettingKeyGoogleOAuthFrontendRedirectURL:             defaultGoogleOAuthFrontend,
+		SettingKeyOIDCConnectEnabled:                         "false",
+		SettingKeyOIDCConnectProviderName:                    "OIDC",
+		SettingKeyOIDCConnectClientID:                        "",
+		SettingKeyOIDCConnectClientSecret:                    "",
+		SettingKeyOIDCConnectIssuerURL:                       "",
+		SettingKeyOIDCConnectDiscoveryURL:                    "",
+		SettingKeyOIDCConnectAuthorizeURL:                    "",
+		SettingKeyOIDCConnectTokenURL:                        "",
+		SettingKeyOIDCConnectUserInfoURL:                     "",
+		SettingKeyOIDCConnectJWKSURL:                         "",
+		SettingKeyOIDCConnectScopes:                          "openid email profile",
+		SettingKeyOIDCConnectRedirectURL:                     "",
+		SettingKeyOIDCConnectFrontendRedirectURL:             "/auth/oidc/callback",
+		SettingKeyOIDCConnectTokenAuthMethod:                 "client_secret_post",
+		SettingKeyOIDCConnectUsePKCE:                         strconv.FormatBool(oidcUsePKCEDefault),
+		SettingKeyOIDCConnectValidateIDToken:                 strconv.FormatBool(oidcValidateIDTokenDefault),
+		SettingKeyOIDCConnectAllowedSigningAlgs:              "RS256,ES256,PS256",
+		SettingKeyOIDCConnectClockSkewSeconds:                "120",
+		SettingKeyOIDCConnectRequireEmailVerified:            "false",
+		SettingKeyOIDCConnectUserInfoEmailPath:               "",
+		SettingKeyOIDCConnectUserInfoIDPath:                  "",
+		SettingKeyOIDCConnectUserInfoUsernamePath:            "",
+		SettingKeyWindowsADEnabled:                           "false",
+		SettingKeyWindowsADProviderName:                      defaultWindowsADProviderName,
+		SettingKeyWindowsADURL:                               "",
+		SettingKeyWindowsADBaseDN:                            "",
+		SettingKeyWindowsADBindDN:                            "",
+		SettingKeyWindowsADBindPassword:                      "",
+		SettingKeyWindowsADUserFilter:                        defaultWindowsADUserFilter,
+		SettingKeyWindowsADEmailAttribute:                    "mail",
+		SettingKeyWindowsADUsernameAttribute:                 "sAMAccountName",
+		SettingKeyWindowsADDisplayAttribute:                  "displayName",
+		SettingKeyWindowsADIDAttribute:                       "objectGUID",
+		SettingKeyWindowsADStartTLS:                          "false",
+		SettingKeyWindowsADSkipTLSVerify:                     "false",
+		SettingKeyDefaultConcurrency:                         strconv.Itoa(s.cfg.Default.UserConcurrency),
+		SettingKeyDefaultBalance:                             strconv.FormatFloat(s.cfg.Default.UserBalance, 'f', 8, 64),
+		SettingKeyAffiliateRebateRate:                        strconv.FormatFloat(AffiliateRebateRateDefault, 'f', 8, 64),
+		SettingKeyAffiliateRebateFreezeHours:                 strconv.Itoa(AffiliateRebateFreezeHoursDefault),
+		SettingKeyAffiliateRebateDurationDays:                strconv.Itoa(AffiliateRebateDurationDaysDefault),
+		SettingKeyAffiliateRebatePerInviteeCap:               strconv.FormatFloat(AffiliateRebatePerInviteeCapDefault, 'f', 2, 64),
+		SettingKeyDefaultUserRPMLimit:                        "0",
+		SettingKeyDefaultSubscriptions:                       "[]",
+		SettingKeyAuthSourceDefaultEmailBalance:              "0",
+		SettingKeyAuthSourceDefaultEmailConcurrency:          "5",
+		SettingKeyAuthSourceDefaultEmailSubscriptions:        "[]",
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup:        "false",
+		SettingKeyAuthSourceDefaultEmailGrantOnFirstBind:     "false",
+		SettingKeyAuthSourceDefaultLinuxDoBalance:            "0",
+		SettingKeyAuthSourceDefaultLinuxDoConcurrency:        "5",
+		SettingKeyAuthSourceDefaultLinuxDoSubscriptions:      "[]",
+		SettingKeyAuthSourceDefaultLinuxDoGrantOnSignup:      "false",
+		SettingKeyAuthSourceDefaultLinuxDoGrantOnFirstBind:   "false",
+		SettingKeyAuthSourceDefaultOIDCBalance:               "0",
+		SettingKeyAuthSourceDefaultOIDCConcurrency:           "5",
+		SettingKeyAuthSourceDefaultOIDCSubscriptions:         "[]",
+		SettingKeyAuthSourceDefaultOIDCGrantOnSignup:         "false",
+		SettingKeyAuthSourceDefaultOIDCGrantOnFirstBind:      "false",
+		SettingKeyAuthSourceDefaultWeChatBalance:             "0",
+		SettingKeyAuthSourceDefaultWeChatConcurrency:         "5",
+		SettingKeyAuthSourceDefaultWeChatSubscriptions:       "[]",
+		SettingKeyAuthSourceDefaultWeChatGrantOnSignup:       "false",
+		SettingKeyAuthSourceDefaultWeChatGrantOnFirstBind:    "false",
+		SettingKeyAuthSourceDefaultGitHubBalance:             "0",
+		SettingKeyAuthSourceDefaultGitHubConcurrency:         "5",
+		SettingKeyAuthSourceDefaultGitHubSubscriptions:       "[]",
+		SettingKeyAuthSourceDefaultGitHubGrantOnSignup:       "false",
+		SettingKeyAuthSourceDefaultGitHubGrantOnFirstBind:    "false",
+		SettingKeyAuthSourceDefaultGoogleBalance:             "0",
+		SettingKeyAuthSourceDefaultGoogleConcurrency:         "5",
+		SettingKeyAuthSourceDefaultGoogleSubscriptions:       "[]",
+		SettingKeyAuthSourceDefaultGoogleGrantOnSignup:       "false",
+		SettingKeyAuthSourceDefaultGoogleGrantOnFirstBind:    "false",
+		SettingKeyAuthSourceDefaultWindowsADBalance:          "0",
+		SettingKeyAuthSourceDefaultWindowsADConcurrency:      "5",
+		SettingKeyAuthSourceDefaultWindowsADSubscriptions:    "[]",
+		SettingKeyAuthSourceDefaultWindowsADGrantOnSignup:    "false",
+		SettingKeyAuthSourceDefaultWindowsADGrantOnFirstBind: "false",
+		SettingKeyForceEmailOnThirdPartySignup:               "false",
+		SettingKeySMTPPort:                                   "587",
+		SettingKeySMTPUseTLS:                                 "false",
 		// Model fallback defaults
 		SettingKeyEnableModelFallback:      "false",
 		SettingKeyFallbackModelAnthropic:   "claude-3-5-sonnet-20241022",
@@ -2629,6 +2710,25 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		result.OIDCConnectClientSecret = strings.TrimSpace(oidcBase.ClientSecret)
 	}
 	result.OIDCConnectClientSecretConfigured = result.OIDCConnectClientSecret != ""
+
+	windowsADBase := config.WindowsADConfig{}
+	if s.cfg != nil {
+		windowsADBase = s.cfg.WindowsAD
+	}
+	result.WindowsADEnabled = boolSettingOrDefault(settings, SettingKeyWindowsADEnabled, windowsADBase.Enabled)
+	result.WindowsADProviderName = firstNonEmpty(settings[SettingKeyWindowsADProviderName], windowsADBase.ProviderName, defaultWindowsADProviderName)
+	result.WindowsADURL = firstNonEmpty(settings[SettingKeyWindowsADURL], windowsADBase.URL)
+	result.WindowsADBaseDN = firstNonEmpty(settings[SettingKeyWindowsADBaseDN], windowsADBase.BaseDN)
+	result.WindowsADBindDN = firstNonEmpty(settings[SettingKeyWindowsADBindDN], windowsADBase.BindDN)
+	result.WindowsADBindPassword = firstNonEmpty(settings[SettingKeyWindowsADBindPassword], windowsADBase.BindPassword)
+	result.WindowsADBindPasswordConfigured = result.WindowsADBindPassword != ""
+	result.WindowsADUserFilter = firstNonEmpty(settings[SettingKeyWindowsADUserFilter], windowsADBase.UserFilter, defaultWindowsADUserFilter)
+	result.WindowsADEmailAttribute = firstNonEmpty(settings[SettingKeyWindowsADEmailAttribute], windowsADBase.EmailAttribute, "mail")
+	result.WindowsADUsernameAttribute = firstNonEmpty(settings[SettingKeyWindowsADUsernameAttribute], windowsADBase.UsernameAttribute, "sAMAccountName")
+	result.WindowsADDisplayAttribute = firstNonEmpty(settings[SettingKeyWindowsADDisplayAttribute], windowsADBase.DisplayAttribute, "displayName")
+	result.WindowsADIDAttribute = firstNonEmpty(settings[SettingKeyWindowsADIDAttribute], windowsADBase.IDAttribute, "objectGUID")
+	result.WindowsADStartTLS = boolSettingOrDefault(settings, SettingKeyWindowsADStartTLS, windowsADBase.StartTLS)
+	result.WindowsADSkipTLSVerify = boolSettingOrDefault(settings, SettingKeyWindowsADSkipTLSVerify, windowsADBase.SkipTLSVerify)
 
 	gitHubEffective := s.effectiveEmailOAuthConfig(settings, "github")
 	result.GitHubOAuthEnabled = gitHubEffective.Enabled

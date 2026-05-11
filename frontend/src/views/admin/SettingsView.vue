@@ -185,6 +185,100 @@
               </div>
             </div>
           </div>
+
+          <div class="card">
+            <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                Windows AD 域登录
+              </h2>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                通过 LDAP/LDAPS 使用企业域账号登录。
+              </p>
+            </div>
+            <div class="space-y-5 p-6">
+              <div class="flex items-center justify-between">
+                <div>
+                  <label class="font-medium text-gray-900 dark:text-white">启用 Windows AD 登录</label>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">开启后登录页会显示域账号登录入口。</p>
+                </div>
+                <Toggle v-model="form.windows_ad_enabled" />
+              </div>
+
+              <div v-if="form.windows_ad_enabled" class="space-y-6 border-t border-gray-100 pt-4 dark:border-dark-700">
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">显示名称</label>
+                    <input v-model="form.windows_ad_provider_name" type="text" class="input" placeholder="Windows AD" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">LDAP URL</label>
+                    <input v-model="form.windows_ad_url" type="text" class="input font-mono text-sm" placeholder="ldaps://ad.example.com:636" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Base DN</label>
+                    <input v-model="form.windows_ad_base_dn" type="text" class="input font-mono text-sm" placeholder="DC=example,DC=com" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Bind DN</label>
+                    <input v-model="form.windows_ad_bind_dn" type="text" class="input font-mono text-sm" placeholder="CN=svc-sub2api,OU=Service,DC=example,DC=com" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">Bind 密码</label>
+                    <input
+                      v-model="form.windows_ad_bind_password"
+                      type="password"
+                      class="input font-mono text-sm"
+                      :placeholder="form.windows_ad_bind_password_configured ? '********' : '服务账号密码'"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">留空则保留当前密码。</p>
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">用户过滤器</label>
+                    <input v-model="form.windows_ad_user_filter" type="text" class="input font-mono text-sm" placeholder="(sAMAccountName={username})" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">邮箱属性</label>
+                    <input v-model="form.windows_ad_email_attribute" type="text" class="input font-mono text-sm" placeholder="mail" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">用户名属性</label>
+                    <input v-model="form.windows_ad_username_attribute" type="text" class="input font-mono text-sm" placeholder="sAMAccountName" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">显示名属性</label>
+                    <input v-model="form.windows_ad_display_attribute" type="text" class="input font-mono text-sm" placeholder="displayName" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">唯一 ID 属性</label>
+                    <input v-model="form.windows_ad_id_attribute" type="text" class="input font-mono text-sm" placeholder="objectGUID" />
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div class="flex items-center justify-between rounded border border-gray-200 px-4 py-3 dark:border-dark-700">
+                    <div>
+                      <label class="font-medium text-gray-900 dark:text-white">StartTLS</label>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">用于 ldap:// 连接升级到 TLS。</p>
+                    </div>
+                    <Toggle v-model="form.windows_ad_start_tls" />
+                  </div>
+                  <div class="flex items-center justify-between rounded border border-gray-200 px-4 py-3 dark:border-dark-700">
+                    <div>
+                      <label class="font-medium text-gray-900 dark:text-white">跳过 TLS 证书校验</label>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">仅在内网自签证书场景临时使用。</p>
+                    </div>
+                    <Toggle v-model="form.windows_ad_skip_tls_verify" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <!-- /Tab: Security — Admin API Key -->
 
@@ -6310,6 +6404,7 @@ type SettingsForm = Omit<
   oidc_connect_client_secret: string;
   github_oauth_client_secret: string;
   google_oauth_client_secret: string;
+  windows_ad_bind_password: string;
   force_email_on_third_party_signup: boolean;
   openai_advanced_scheduler_enabled: boolean;
 };
@@ -6445,6 +6540,21 @@ const form = reactive<SettingsForm>({
   oidc_connect_userinfo_email_path: "",
   oidc_connect_userinfo_id_path: "",
   oidc_connect_userinfo_username_path: "",
+  windows_ad_enabled: false,
+  windows_ad_provider_name: "Windows AD",
+  windows_ad_url: "",
+  windows_ad_base_dn: "",
+  windows_ad_bind_dn: "",
+  windows_ad_bind_password: "",
+  windows_ad_bind_password_configured: false,
+  windows_ad_user_filter:
+    "(&(objectClass=user)(!(objectClass=computer))(|(sAMAccountName={username})(userPrincipalName={username})))",
+  windows_ad_email_attribute: "mail",
+  windows_ad_username_attribute: "sAMAccountName",
+  windows_ad_display_attribute: "displayName",
+  windows_ad_id_attribute: "objectGUID",
+  windows_ad_start_tls: false,
+  windows_ad_skip_tls_verify: false,
   // GitHub / Google 邮箱快捷登录
   github_oauth_enabled: false,
   github_oauth_client_id: "",
@@ -6537,6 +6647,14 @@ const authSourceDefaultsMeta = computed(() => [
     description: localText(
       "通过 Google 已验证邮箱首次注册或首次绑定时应用。",
       "Applied on first signup or first bind through a verified Google email.",
+    ),
+  },
+  {
+    source: "windows_ad" as AuthSourceType,
+    title: "Windows AD",
+    description: localText(
+      "通过 Windows AD 域账号首次注册或首次绑定时应用。",
+      "Applied on first signup or first bind through Windows AD.",
     ),
   },
 ]);
@@ -7180,6 +7298,7 @@ async function loadSettings() {
       form.wechat_connect_mode,
     );
     form.oidc_connect_client_secret = "";
+    form.windows_ad_bind_password = "";
 
     // Load OpenAI fast/flex policy rules from bulk settings.
     // 仅当 payload 真的包含该字段时填充并标记为已加载；否则保持表单空值，
@@ -7524,6 +7643,19 @@ async function saveSettings() {
       oidc_connect_userinfo_id_path: form.oidc_connect_userinfo_id_path,
       oidc_connect_userinfo_username_path:
         form.oidc_connect_userinfo_username_path,
+      windows_ad_enabled: form.windows_ad_enabled,
+      windows_ad_provider_name: form.windows_ad_provider_name,
+      windows_ad_url: form.windows_ad_url,
+      windows_ad_base_dn: form.windows_ad_base_dn,
+      windows_ad_bind_dn: form.windows_ad_bind_dn,
+      windows_ad_bind_password: form.windows_ad_bind_password || undefined,
+      windows_ad_user_filter: form.windows_ad_user_filter,
+      windows_ad_email_attribute: form.windows_ad_email_attribute,
+      windows_ad_username_attribute: form.windows_ad_username_attribute,
+      windows_ad_display_attribute: form.windows_ad_display_attribute,
+      windows_ad_id_attribute: form.windows_ad_id_attribute,
+      windows_ad_start_tls: form.windows_ad_start_tls,
+      windows_ad_skip_tls_verify: form.windows_ad_skip_tls_verify,
       github_oauth_enabled: form.github_oauth_enabled,
       github_oauth_client_id: form.github_oauth_client_id,
       github_oauth_client_secret:
@@ -7679,6 +7811,7 @@ async function saveSettings() {
       form.wechat_connect_mode,
     );
     form.oidc_connect_client_secret = "";
+    form.windows_ad_bind_password = "";
     // Refresh OpenAI fast/flex policy from server response
     if (
       updated.openai_fast_policy_settings &&

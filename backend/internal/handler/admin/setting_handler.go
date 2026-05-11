@@ -173,6 +173,19 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		OIDCConnectUserInfoEmailPath:           settings.OIDCConnectUserInfoEmailPath,
 		OIDCConnectUserInfoIDPath:              settings.OIDCConnectUserInfoIDPath,
 		OIDCConnectUserInfoUsernamePath:        settings.OIDCConnectUserInfoUsernamePath,
+		WindowsADEnabled:                       settings.WindowsADEnabled,
+		WindowsADProviderName:                  settings.WindowsADProviderName,
+		WindowsADURL:                           settings.WindowsADURL,
+		WindowsADBaseDN:                        settings.WindowsADBaseDN,
+		WindowsADBindDN:                        settings.WindowsADBindDN,
+		WindowsADBindPasswordConfigured:        settings.WindowsADBindPasswordConfigured,
+		WindowsADUserFilter:                    settings.WindowsADUserFilter,
+		WindowsADEmailAttribute:                settings.WindowsADEmailAttribute,
+		WindowsADUsernameAttribute:             settings.WindowsADUsernameAttribute,
+		WindowsADDisplayAttribute:              settings.WindowsADDisplayAttribute,
+		WindowsADIDAttribute:                   settings.WindowsADIDAttribute,
+		WindowsADStartTLS:                      settings.WindowsADStartTLS,
+		WindowsADSkipTLSVerify:                 settings.WindowsADSkipTLSVerify,
 		GitHubOAuthEnabled:                     settings.GitHubOAuthEnabled,
 		GitHubOAuthClientID:                    settings.GitHubOAuthClientID,
 		GitHubOAuthClientSecretConfigured:      settings.GitHubOAuthClientSecretConfigured,
@@ -416,6 +429,20 @@ type UpdateSettingsRequest struct {
 	OIDCConnectUserInfoIDPath       string `json:"oidc_connect_userinfo_id_path"`
 	OIDCConnectUserInfoUsernamePath string `json:"oidc_connect_userinfo_username_path"`
 
+	WindowsADEnabled           bool   `json:"windows_ad_enabled"`
+	WindowsADProviderName      string `json:"windows_ad_provider_name"`
+	WindowsADURL               string `json:"windows_ad_url"`
+	WindowsADBaseDN            string `json:"windows_ad_base_dn"`
+	WindowsADBindDN            string `json:"windows_ad_bind_dn"`
+	WindowsADBindPassword      string `json:"windows_ad_bind_password"`
+	WindowsADUserFilter        string `json:"windows_ad_user_filter"`
+	WindowsADEmailAttribute    string `json:"windows_ad_email_attribute"`
+	WindowsADUsernameAttribute string `json:"windows_ad_username_attribute"`
+	WindowsADDisplayAttribute  string `json:"windows_ad_display_attribute"`
+	WindowsADIDAttribute       string `json:"windows_ad_id_attribute"`
+	WindowsADStartTLS          bool   `json:"windows_ad_start_tls"`
+	WindowsADSkipTLSVerify     bool   `json:"windows_ad_skip_tls_verify"`
+
 	GitHubOAuthEnabled             bool   `json:"github_oauth_enabled"`
 	GitHubOAuthClientID            string `json:"github_oauth_client_id"`
 	GitHubOAuthClientSecret        string `json:"github_oauth_client_secret"`
@@ -444,45 +471,50 @@ type UpdateSettingsRequest struct {
 	CustomEndpoints             *[]dto.CustomEndpoint `json:"custom_endpoints"`
 
 	// 默认配置
-	DefaultConcurrency                       int                               `json:"default_concurrency"`
-	DefaultBalance                           float64                           `json:"default_balance"`
-	AffiliateRebateRate                      *float64                          `json:"affiliate_rebate_rate"`
-	AffiliateRebateFreezeHours               *int                              `json:"affiliate_rebate_freeze_hours"`
-	AffiliateRebateDurationDays              *int                              `json:"affiliate_rebate_duration_days"`
-	AffiliateRebatePerInviteeCap             *float64                          `json:"affiliate_rebate_per_invitee_cap"`
-	DefaultUserRPMLimit                      int                               `json:"default_user_rpm_limit"`
-	DefaultSubscriptions                     []dto.DefaultSubscriptionSetting  `json:"default_subscriptions"`
-	AuthSourceDefaultEmailBalance            *float64                          `json:"auth_source_default_email_balance"`
-	AuthSourceDefaultEmailConcurrency        *int                              `json:"auth_source_default_email_concurrency"`
-	AuthSourceDefaultEmailSubscriptions      *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_email_subscriptions"`
-	AuthSourceDefaultEmailGrantOnSignup      *bool                             `json:"auth_source_default_email_grant_on_signup"`
-	AuthSourceDefaultEmailGrantOnFirstBind   *bool                             `json:"auth_source_default_email_grant_on_first_bind"`
-	AuthSourceDefaultLinuxDoBalance          *float64                          `json:"auth_source_default_linuxdo_balance"`
-	AuthSourceDefaultLinuxDoConcurrency      *int                              `json:"auth_source_default_linuxdo_concurrency"`
-	AuthSourceDefaultLinuxDoSubscriptions    *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_linuxdo_subscriptions"`
-	AuthSourceDefaultLinuxDoGrantOnSignup    *bool                             `json:"auth_source_default_linuxdo_grant_on_signup"`
-	AuthSourceDefaultLinuxDoGrantOnFirstBind *bool                             `json:"auth_source_default_linuxdo_grant_on_first_bind"`
-	AuthSourceDefaultOIDCBalance             *float64                          `json:"auth_source_default_oidc_balance"`
-	AuthSourceDefaultOIDCConcurrency         *int                              `json:"auth_source_default_oidc_concurrency"`
-	AuthSourceDefaultOIDCSubscriptions       *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_oidc_subscriptions"`
-	AuthSourceDefaultOIDCGrantOnSignup       *bool                             `json:"auth_source_default_oidc_grant_on_signup"`
-	AuthSourceDefaultOIDCGrantOnFirstBind    *bool                             `json:"auth_source_default_oidc_grant_on_first_bind"`
-	AuthSourceDefaultWeChatBalance           *float64                          `json:"auth_source_default_wechat_balance"`
-	AuthSourceDefaultWeChatConcurrency       *int                              `json:"auth_source_default_wechat_concurrency"`
-	AuthSourceDefaultWeChatSubscriptions     *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_wechat_subscriptions"`
-	AuthSourceDefaultWeChatGrantOnSignup     *bool                             `json:"auth_source_default_wechat_grant_on_signup"`
-	AuthSourceDefaultWeChatGrantOnFirstBind  *bool                             `json:"auth_source_default_wechat_grant_on_first_bind"`
-	AuthSourceDefaultGitHubBalance           *float64                          `json:"auth_source_default_github_balance"`
-	AuthSourceDefaultGitHubConcurrency       *int                              `json:"auth_source_default_github_concurrency"`
-	AuthSourceDefaultGitHubSubscriptions     *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_github_subscriptions"`
-	AuthSourceDefaultGitHubGrantOnSignup     *bool                             `json:"auth_source_default_github_grant_on_signup"`
-	AuthSourceDefaultGitHubGrantOnFirstBind  *bool                             `json:"auth_source_default_github_grant_on_first_bind"`
-	AuthSourceDefaultGoogleBalance           *float64                          `json:"auth_source_default_google_balance"`
-	AuthSourceDefaultGoogleConcurrency       *int                              `json:"auth_source_default_google_concurrency"`
-	AuthSourceDefaultGoogleSubscriptions     *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_google_subscriptions"`
-	AuthSourceDefaultGoogleGrantOnSignup     *bool                             `json:"auth_source_default_google_grant_on_signup"`
-	AuthSourceDefaultGoogleGrantOnFirstBind  *bool                             `json:"auth_source_default_google_grant_on_first_bind"`
-	ForceEmailOnThirdPartySignup             *bool                             `json:"force_email_on_third_party_signup"`
+	DefaultConcurrency                         int                               `json:"default_concurrency"`
+	DefaultBalance                             float64                           `json:"default_balance"`
+	AffiliateRebateRate                        *float64                          `json:"affiliate_rebate_rate"`
+	AffiliateRebateFreezeHours                 *int                              `json:"affiliate_rebate_freeze_hours"`
+	AffiliateRebateDurationDays                *int                              `json:"affiliate_rebate_duration_days"`
+	AffiliateRebatePerInviteeCap               *float64                          `json:"affiliate_rebate_per_invitee_cap"`
+	DefaultUserRPMLimit                        int                               `json:"default_user_rpm_limit"`
+	DefaultSubscriptions                       []dto.DefaultSubscriptionSetting  `json:"default_subscriptions"`
+	AuthSourceDefaultEmailBalance              *float64                          `json:"auth_source_default_email_balance"`
+	AuthSourceDefaultEmailConcurrency          *int                              `json:"auth_source_default_email_concurrency"`
+	AuthSourceDefaultEmailSubscriptions        *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_email_subscriptions"`
+	AuthSourceDefaultEmailGrantOnSignup        *bool                             `json:"auth_source_default_email_grant_on_signup"`
+	AuthSourceDefaultEmailGrantOnFirstBind     *bool                             `json:"auth_source_default_email_grant_on_first_bind"`
+	AuthSourceDefaultLinuxDoBalance            *float64                          `json:"auth_source_default_linuxdo_balance"`
+	AuthSourceDefaultLinuxDoConcurrency        *int                              `json:"auth_source_default_linuxdo_concurrency"`
+	AuthSourceDefaultLinuxDoSubscriptions      *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_linuxdo_subscriptions"`
+	AuthSourceDefaultLinuxDoGrantOnSignup      *bool                             `json:"auth_source_default_linuxdo_grant_on_signup"`
+	AuthSourceDefaultLinuxDoGrantOnFirstBind   *bool                             `json:"auth_source_default_linuxdo_grant_on_first_bind"`
+	AuthSourceDefaultOIDCBalance               *float64                          `json:"auth_source_default_oidc_balance"`
+	AuthSourceDefaultOIDCConcurrency           *int                              `json:"auth_source_default_oidc_concurrency"`
+	AuthSourceDefaultOIDCSubscriptions         *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_oidc_subscriptions"`
+	AuthSourceDefaultOIDCGrantOnSignup         *bool                             `json:"auth_source_default_oidc_grant_on_signup"`
+	AuthSourceDefaultOIDCGrantOnFirstBind      *bool                             `json:"auth_source_default_oidc_grant_on_first_bind"`
+	AuthSourceDefaultWeChatBalance             *float64                          `json:"auth_source_default_wechat_balance"`
+	AuthSourceDefaultWeChatConcurrency         *int                              `json:"auth_source_default_wechat_concurrency"`
+	AuthSourceDefaultWeChatSubscriptions       *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_wechat_subscriptions"`
+	AuthSourceDefaultWeChatGrantOnSignup       *bool                             `json:"auth_source_default_wechat_grant_on_signup"`
+	AuthSourceDefaultWeChatGrantOnFirstBind    *bool                             `json:"auth_source_default_wechat_grant_on_first_bind"`
+	AuthSourceDefaultGitHubBalance             *float64                          `json:"auth_source_default_github_balance"`
+	AuthSourceDefaultGitHubConcurrency         *int                              `json:"auth_source_default_github_concurrency"`
+	AuthSourceDefaultGitHubSubscriptions       *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_github_subscriptions"`
+	AuthSourceDefaultGitHubGrantOnSignup       *bool                             `json:"auth_source_default_github_grant_on_signup"`
+	AuthSourceDefaultGitHubGrantOnFirstBind    *bool                             `json:"auth_source_default_github_grant_on_first_bind"`
+	AuthSourceDefaultGoogleBalance             *float64                          `json:"auth_source_default_google_balance"`
+	AuthSourceDefaultGoogleConcurrency         *int                              `json:"auth_source_default_google_concurrency"`
+	AuthSourceDefaultGoogleSubscriptions       *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_google_subscriptions"`
+	AuthSourceDefaultGoogleGrantOnSignup       *bool                             `json:"auth_source_default_google_grant_on_signup"`
+	AuthSourceDefaultGoogleGrantOnFirstBind    *bool                             `json:"auth_source_default_google_grant_on_first_bind"`
+	AuthSourceDefaultWindowsADBalance          *float64                          `json:"auth_source_default_windows_ad_balance"`
+	AuthSourceDefaultWindowsADConcurrency      *int                              `json:"auth_source_default_windows_ad_concurrency"`
+	AuthSourceDefaultWindowsADSubscriptions    *[]dto.DefaultSubscriptionSetting `json:"auth_source_default_windows_ad_subscriptions"`
+	AuthSourceDefaultWindowsADGrantOnSignup    *bool                             `json:"auth_source_default_windows_ad_grant_on_signup"`
+	AuthSourceDefaultWindowsADGrantOnFirstBind *bool                             `json:"auth_source_default_windows_ad_grant_on_first_bind"`
+	ForceEmailOnThirdPartySignup               *bool                             `json:"force_email_on_third_party_signup"`
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`
@@ -1324,6 +1356,19 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		OIDCConnectUserInfoEmailPath:     req.OIDCConnectUserInfoEmailPath,
 		OIDCConnectUserInfoIDPath:        req.OIDCConnectUserInfoIDPath,
 		OIDCConnectUserInfoUsernamePath:  req.OIDCConnectUserInfoUsernamePath,
+		WindowsADEnabled:                 req.WindowsADEnabled,
+		WindowsADProviderName:            strings.TrimSpace(firstNonEmpty(req.WindowsADProviderName, previousSettings.WindowsADProviderName, "Windows AD")),
+		WindowsADURL:                     strings.TrimSpace(firstNonEmpty(req.WindowsADURL, previousSettings.WindowsADURL)),
+		WindowsADBaseDN:                  strings.TrimSpace(firstNonEmpty(req.WindowsADBaseDN, previousSettings.WindowsADBaseDN)),
+		WindowsADBindDN:                  strings.TrimSpace(firstNonEmpty(req.WindowsADBindDN, previousSettings.WindowsADBindDN)),
+		WindowsADBindPassword:            strings.TrimSpace(req.WindowsADBindPassword),
+		WindowsADUserFilter:              strings.TrimSpace(firstNonEmpty(req.WindowsADUserFilter, previousSettings.WindowsADUserFilter)),
+		WindowsADEmailAttribute:          strings.TrimSpace(firstNonEmpty(req.WindowsADEmailAttribute, previousSettings.WindowsADEmailAttribute, "mail")),
+		WindowsADUsernameAttribute:       strings.TrimSpace(firstNonEmpty(req.WindowsADUsernameAttribute, previousSettings.WindowsADUsernameAttribute, "sAMAccountName")),
+		WindowsADDisplayAttribute:        strings.TrimSpace(firstNonEmpty(req.WindowsADDisplayAttribute, previousSettings.WindowsADDisplayAttribute, "displayName")),
+		WindowsADIDAttribute:             strings.TrimSpace(firstNonEmpty(req.WindowsADIDAttribute, previousSettings.WindowsADIDAttribute, "objectGUID")),
+		WindowsADStartTLS:                req.WindowsADStartTLS,
+		WindowsADSkipTLSVerify:           req.WindowsADSkipTLSVerify,
 		GitHubOAuthEnabled:               req.GitHubOAuthEnabled,
 		GitHubOAuthClientID:              req.GitHubOAuthClientID,
 		GitHubOAuthClientSecret:          req.GitHubOAuthClientSecret,
@@ -1550,6 +1595,13 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			GrantOnSignup:    boolValueOrDefault(req.AuthSourceDefaultGoogleGrantOnSignup, previousAuthSourceDefaults.Google.GrantOnSignup),
 			GrantOnFirstBind: boolValueOrDefault(req.AuthSourceDefaultGoogleGrantOnFirstBind, previousAuthSourceDefaults.Google.GrantOnFirstBind),
 		},
+		WindowsAD: service.ProviderDefaultGrantSettings{
+			Balance:          float64ValueOrDefault(req.AuthSourceDefaultWindowsADBalance, previousAuthSourceDefaults.WindowsAD.Balance),
+			Concurrency:      intValueOrDefault(req.AuthSourceDefaultWindowsADConcurrency, previousAuthSourceDefaults.WindowsAD.Concurrency),
+			Subscriptions:    defaultSubscriptionsValueOrDefault(req.AuthSourceDefaultWindowsADSubscriptions, previousAuthSourceDefaults.WindowsAD.Subscriptions),
+			GrantOnSignup:    boolValueOrDefault(req.AuthSourceDefaultWindowsADGrantOnSignup, previousAuthSourceDefaults.WindowsAD.GrantOnSignup),
+			GrantOnFirstBind: boolValueOrDefault(req.AuthSourceDefaultWindowsADGrantOnFirstBind, previousAuthSourceDefaults.WindowsAD.GrantOnFirstBind),
+		},
 		ForceEmailOnThirdPartySignup: boolValueOrDefault(req.ForceEmailOnThirdPartySignup, previousAuthSourceDefaults.ForceEmailOnThirdPartySignup),
 	}
 	if err := h.settingService.UpdateSettingsWithAuthSourceDefaults(c.Request.Context(), settings, authSourceDefaults); err != nil {
@@ -1696,6 +1748,19 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		OIDCConnectUserInfoEmailPath:           updatedSettings.OIDCConnectUserInfoEmailPath,
 		OIDCConnectUserInfoIDPath:              updatedSettings.OIDCConnectUserInfoIDPath,
 		OIDCConnectUserInfoUsernamePath:        updatedSettings.OIDCConnectUserInfoUsernamePath,
+		WindowsADEnabled:                       updatedSettings.WindowsADEnabled,
+		WindowsADProviderName:                  updatedSettings.WindowsADProviderName,
+		WindowsADURL:                           updatedSettings.WindowsADURL,
+		WindowsADBaseDN:                        updatedSettings.WindowsADBaseDN,
+		WindowsADBindDN:                        updatedSettings.WindowsADBindDN,
+		WindowsADBindPasswordConfigured:        updatedSettings.WindowsADBindPasswordConfigured,
+		WindowsADUserFilter:                    updatedSettings.WindowsADUserFilter,
+		WindowsADEmailAttribute:                updatedSettings.WindowsADEmailAttribute,
+		WindowsADUsernameAttribute:             updatedSettings.WindowsADUsernameAttribute,
+		WindowsADDisplayAttribute:              updatedSettings.WindowsADDisplayAttribute,
+		WindowsADIDAttribute:                   updatedSettings.WindowsADIDAttribute,
+		WindowsADStartTLS:                      updatedSettings.WindowsADStartTLS,
+		WindowsADSkipTLSVerify:                 updatedSettings.WindowsADSkipTLSVerify,
 		GitHubOAuthEnabled:                     updatedSettings.GitHubOAuthEnabled,
 		GitHubOAuthClientID:                    updatedSettings.GitHubOAuthClientID,
 		GitHubOAuthClientSecretConfigured:      updatedSettings.GitHubOAuthClientSecretConfigured,
@@ -2338,6 +2403,11 @@ func systemSettingsResponseData(settings dto.SystemSettings, authSourceDefaults 
 	data["auth_source_default_google_subscriptions"] = authSourceDefaults.Google.Subscriptions
 	data["auth_source_default_google_grant_on_signup"] = authSourceDefaults.Google.GrantOnSignup
 	data["auth_source_default_google_grant_on_first_bind"] = authSourceDefaults.Google.GrantOnFirstBind
+	data["auth_source_default_windows_ad_balance"] = authSourceDefaults.WindowsAD.Balance
+	data["auth_source_default_windows_ad_concurrency"] = authSourceDefaults.WindowsAD.Concurrency
+	data["auth_source_default_windows_ad_subscriptions"] = authSourceDefaults.WindowsAD.Subscriptions
+	data["auth_source_default_windows_ad_grant_on_signup"] = authSourceDefaults.WindowsAD.GrantOnSignup
+	data["auth_source_default_windows_ad_grant_on_first_bind"] = authSourceDefaults.WindowsAD.GrantOnFirstBind
 	data["force_email_on_third_party_signup"] = authSourceDefaults.ForceEmailOnThirdPartySignup
 
 	return data
