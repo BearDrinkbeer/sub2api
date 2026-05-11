@@ -67,3 +67,29 @@ jobs:
           version: v2.9
           args: --timeout=30m
           working-directory: backend
+
+  tag:
+    needs: [test, frontend, golangci-lint]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat backend/cmd/server/VERSION)
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          TAG="v${VERSION}-${TIMESTAMP}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
