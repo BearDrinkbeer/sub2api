@@ -279,7 +279,7 @@ type PublicSettings struct {
 	WeChatOAuthMobileEnabled         bool                     `json:"wechat_oauth_mobile_enabled"`
 	OIDCOAuthEnabled                 bool                     `json:"oidc_oauth_enabled"`
 	OIDCOAuthProviderName            string                   `json:"oidc_oauth_provider_name"`
-	WindowsADOAuthEnabled            bool                     `json:"windows_ad_oauth_enabled"`
+	WindowsADEnabled                   bool                     `json:"windows_ad_enabled"`
 	WindowsADProviderName            string                   `json:"windows_ad_provider_name"`
 	GitHubOAuthEnabled               bool                     `json:"github_oauth_enabled"`
 	GoogleOAuthEnabled               bool                     `json:"google_oauth_enabled"`
