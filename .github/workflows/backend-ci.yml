@@ -68,7 +68,7 @@ jobs:
 
   tag:
     needs: [test, frontend, golangci-lint]
-    if: github.event_name == 'push' && github.ref =~ '^refs/heads/'
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
