@@ -142,7 +142,7 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 }
 
 func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username, providerType, invitationCode, affiliateCode string) (*User, error) {
-	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
+	if !s.canAutoProvisionOAuthUser(ctx, providerType) {
 		return nil, ErrRegDisabled
 	}
 	invitationRedeemCode, err := s.validateOAuthRegistrationInvitation(ctx, invitationCode)
@@ -197,6 +197,14 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 		}
 	}
 	return user, nil
+}
+
+func (s *AuthService) canAutoProvisionOAuthUser(ctx context.Context, providerType string) bool {
+	providerType = normalizeOAuthSignupSource(providerType)
+	if providerType == "windows_ad" {
+		return true
+	}
+	return s.settingService != nil && s.settingService.IsRegistrationEnabled(ctx)
 }
 
 func (s *AuthService) findEmailOAuthIdentityOwner(ctx context.Context, providerType, providerKey, providerSubject string) (*User, error) {
