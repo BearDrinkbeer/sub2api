@@ -100,6 +100,7 @@ type SystemSettings struct {
 	WindowsADProviderName           string `json:"windows_ad_provider_name"`
 	WindowsADURL                    string `json:"windows_ad_url"`
 	WindowsADBaseDN                 string `json:"windows_ad_base_dn"`
+	WindowsADUserSearchBase         string `json:"windows_ad_user_search_base"`
 	WindowsADBindDN                 string `json:"windows_ad_bind_dn"`
 	WindowsADBindPasswordConfigured bool   `json:"windows_ad_bind_password_configured"`
 	WindowsADUserFilter             string `json:"windows_ad_user_filter"`
