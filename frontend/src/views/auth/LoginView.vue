@@ -355,7 +355,7 @@ onMounted(async () => {
     backendModeEnabled.value = settings.backend_mode_enabled
     oidcOAuthEnabled.value = settings.oidc_oauth_enabled
     oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || 'OIDC'
-    windowsADEnabled.value = settings.windows_ad_oauth_enabled === true
+    windowsADEnabled.value = settings.windows_ad_enabled === true
     windowsADProviderName.value = settings.windows_ad_provider_name || 'Windows AD'
     githubOAuthEnabled.value = settings.github_oauth_enabled
     googleOAuthEnabled.value = settings.google_oauth_enabled
