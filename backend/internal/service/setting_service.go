@@ -749,7 +749,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		PaymentEnabled:                   settings[SettingPaymentEnabled] == "true",
 		OIDCOAuthEnabled:                 oidcEnabled,
 		OIDCOAuthProviderName:            oidcProviderName,
-		WindowsADEnabled:                   windowsADEnabled,
+		WindowsADEnabled:                 windowsADEnabled,
 		WindowsADProviderName:            windowsADProviderName,
 		GitHubOAuthEnabled:               gitHubEnabled,
 		GoogleOAuthEnabled:               googleEnabled,
@@ -903,7 +903,7 @@ type PublicSettingsInjectionPayload struct {
 	WeChatOAuthMobileEnabled         bool                     `json:"wechat_oauth_mobile_enabled"`
 	OIDCOAuthEnabled                 bool                     `json:"oidc_oauth_enabled"`
 	OIDCOAuthProviderName            string                   `json:"oidc_oauth_provider_name"`
-	WindowsADEnabled                   bool                     `json:"windows_ad_enabled"`
+	WindowsADEnabled                 bool                     `json:"windows_ad_enabled"`
 	WindowsADProviderName            string                   `json:"windows_ad_provider_name"`
 	GitHubOAuthEnabled               bool                     `json:"github_oauth_enabled"`
 	GoogleOAuthEnabled               bool                     `json:"google_oauth_enabled"`
@@ -969,7 +969,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		WeChatOAuthMobileEnabled:         settings.WeChatOAuthMobileEnabled,
 		OIDCOAuthEnabled:                 settings.OIDCOAuthEnabled,
 		OIDCOAuthProviderName:            settings.OIDCOAuthProviderName,
-		WindowsADEnabled:                   settings.WindowsADEnabled,
+		WindowsADEnabled:                 settings.WindowsADEnabled,
 		WindowsADProviderName:            settings.WindowsADProviderName,
 		GitHubOAuthEnabled:               settings.GitHubOAuthEnabled,
 		GoogleOAuthEnabled:               settings.GoogleOAuthEnabled,
@@ -1482,6 +1482,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyWindowsADProviderName] = strings.TrimSpace(firstNonEmpty(settings.WindowsADProviderName, defaultWindowsADProviderName))
 	updates[SettingKeyWindowsADURL] = strings.TrimSpace(settings.WindowsADURL)
 	updates[SettingKeyWindowsADBaseDN] = strings.TrimSpace(settings.WindowsADBaseDN)
+	updates[SettingKeyWindowsADUserSearchBase] = strings.TrimSpace(settings.WindowsADUserSearchBase)
 	updates[SettingKeyWindowsADBindDN] = strings.TrimSpace(settings.WindowsADBindDN)
 	if settings.WindowsADBindPassword != "" {
 		updates[SettingKeyWindowsADBindPassword] = strings.TrimSpace(settings.WindowsADBindPassword)

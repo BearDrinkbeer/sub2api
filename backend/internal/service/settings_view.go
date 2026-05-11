@@ -98,6 +98,7 @@ type SystemSettings struct {
 	WindowsADProviderName           string
 	WindowsADURL                    string
 	WindowsADBaseDN                 string
+	WindowsADUserSearchBase         string
 	WindowsADBindDN                 string
 	WindowsADBindPassword           string
 	WindowsADBindPasswordConfigured bool
@@ -257,7 +258,7 @@ type PublicSettings struct {
 	PaymentEnabled           bool
 	OIDCOAuthEnabled         bool
 	OIDCOAuthProviderName    string
-	WindowsADEnabled              bool
+	WindowsADEnabled         bool
 	WindowsADProviderName    string
 	GitHubOAuthEnabled       bool
 	GoogleOAuthEnabled       bool
