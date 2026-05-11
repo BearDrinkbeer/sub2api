@@ -100,6 +100,7 @@ type SystemSettings struct {
 	WindowsADProviderName           string `json:"windows_ad_provider_name"`
 	WindowsADURL                    string `json:"windows_ad_url"`
 	WindowsADBaseDN                 string `json:"windows_ad_base_dn"`
+	WindowsADUserSearchBase         string `json:"windows_ad_user_search_base"`
 	WindowsADBindDN                 string `json:"windows_ad_bind_dn"`
 	WindowsADBindPasswordConfigured bool   `json:"windows_ad_bind_password_configured"`
 	WindowsADUserFilter             string `json:"windows_ad_user_filter"`
@@ -279,7 +280,7 @@ type PublicSettings struct {
 	WeChatOAuthMobileEnabled         bool                     `json:"wechat_oauth_mobile_enabled"`
 	OIDCOAuthEnabled                 bool                     `json:"oidc_oauth_enabled"`
 	OIDCOAuthProviderName            string                   `json:"oidc_oauth_provider_name"`
-	WindowsADOAuthEnabled            bool                     `json:"windows_ad_oauth_enabled"`
+	WindowsADEnabled                   bool                     `json:"windows_ad_enabled"`
 	WindowsADProviderName            string                   `json:"windows_ad_provider_name"`
 	GitHubOAuthEnabled               bool                     `json:"github_oauth_enabled"`
 	GoogleOAuthEnabled               bool                     `json:"google_oauth_enabled"`

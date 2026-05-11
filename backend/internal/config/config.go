@@ -248,6 +248,7 @@ type WindowsADConfig struct {
 	ProviderName      string `mapstructure:"provider_name"`
 	URL               string `mapstructure:"url"`
 	BaseDN            string `mapstructure:"base_dn"`
+	UserSearchBase    string `mapstructure:"user_search_base"`
 	BindDN            string `mapstructure:"bind_dn"`
 	BindPassword      string `mapstructure:"bind_password"`
 	UserFilter        string `mapstructure:"user_filter"`

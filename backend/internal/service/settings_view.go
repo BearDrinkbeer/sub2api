@@ -257,7 +257,7 @@ type PublicSettings struct {
 	PaymentEnabled           bool
 	OIDCOAuthEnabled         bool
 	OIDCOAuthProviderName    string
-	WindowsADOAuthEnabled    bool
+	WindowsADEnabled              bool
 	WindowsADProviderName    string
 	GitHubOAuthEnabled       bool
 	GoogleOAuthEnabled       bool
