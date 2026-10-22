@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync/atomic"
 
@@ -187,6 +188,7 @@ type AuthSourceDefaultSettings struct {
 	GitHub                       ProviderDefaultGrantSettings
 	Google                       ProviderDefaultGrantSettings
 	DingTalk                     ProviderDefaultGrantSettings
+	WindowsAD                    ProviderDefaultGrantSettings
 	ForceEmailOnThirdPartySignup bool
 }
 
@@ -266,6 +268,15 @@ var (
 		grantOnFirstBind: SettingKeyAuthSourceDefaultDingTalkGrantOnFirstBind,
 		platformQuotas:   SettingKeyAuthSourcePlatformQuotas("dingtalk"),
 	}
+	windowsADAuthSourceDefaultKeys = authSourceDefaultKeySet{
+		source:           "windows_ad",
+		balance:          SettingKeyAuthSourceDefaultWindowsADBalance,
+		concurrency:      SettingKeyAuthSourceDefaultWindowsADConcurrency,
+		subscriptions:    SettingKeyAuthSourceDefaultWindowsADSubscriptions,
+		grantOnSignup:    SettingKeyAuthSourceDefaultWindowsADGrantOnSignup,
+		grantOnFirstBind: SettingKeyAuthSourceDefaultWindowsADGrantOnFirstBind,
+		platformQuotas:   SettingKeyAuthSourcePlatformQuotas("windows_ad"),
+	}
 )
 
 const (
@@ -285,6 +296,8 @@ const (
 	defaultGoogleOAuthUserInfo   = "https://openidconnect.googleapis.com/v1/userinfo"
 	defaultGoogleOAuthScopes     = "openid email profile"
 	defaultGoogleOAuthFrontend   = "/auth/oauth/callback"
+	defaultWindowsADProviderName = "Windows AD"
+	defaultWindowsADUserFilter   = "(&(objectClass=user)(!(objectClass=computer))(|(sAMAccountName={username})(userPrincipalName={username})))"
 	defaultLoginAgreementMode    = "modal"
 	defaultLoginAgreementDate    = "2026-03-31"
 )
@@ -377,6 +390,71 @@ func (s *SettingService) GetAllSettings(ctx context.Context) (*SystemSettings, e
 	}
 
 	return s.parseSettings(settings), nil
+}
+
+func boolSettingOrDefault(settings map[string]string, key string, fallback bool) bool {
+	if value, ok := settings[key]; ok {
+		return value == "true"
+	}
+	return fallback
+}
+
+func (s *SettingService) parseWindowsADSettings(settings map[string]string, result *SystemSettings) {
+	base := config.WindowsADConfig{}
+	if s.cfg != nil {
+		base = s.cfg.WindowsAD
+	}
+	result.WindowsADEnabled = boolSettingOrDefault(settings, SettingKeyWindowsADEnabled, false)
+	result.WindowsADProviderName = firstNonEmpty(settings[SettingKeyWindowsADProviderName], base.ProviderName, defaultWindowsADProviderName)
+	result.WindowsADURL = firstNonEmpty(settings[SettingKeyWindowsADURL], base.URL)
+	result.WindowsADBaseDN = firstNonEmpty(settings[SettingKeyWindowsADBaseDN], base.BaseDN)
+	result.WindowsADUserSearchBase = firstNonEmpty(settings[SettingKeyWindowsADUserSearchBase], base.UserSearchBase)
+	result.WindowsADGroupSearchBase = firstNonEmpty(settings[SettingKeyWindowsADGroupSearchBase], base.GroupSearchBase)
+	result.WindowsADBindDN = firstNonEmpty(settings[SettingKeyWindowsADBindDN], base.BindDN)
+	result.WindowsADBindPassword = settings[SettingKeyWindowsADBindPassword]
+	if result.WindowsADBindPassword == "" {
+		result.WindowsADBindPassword = base.BindPassword
+	}
+	result.WindowsADBindPasswordConfigured = result.WindowsADBindPassword != ""
+	result.WindowsADUserFilter = firstNonEmpty(settings[SettingKeyWindowsADUserFilter], base.UserFilter, defaultWindowsADUserFilter)
+	result.WindowsADEmailAttribute = firstNonEmpty(settings[SettingKeyWindowsADEmailAttribute], base.EmailAttribute, "mail")
+	result.WindowsADUsernameAttribute = firstNonEmpty(settings[SettingKeyWindowsADUsernameAttribute], base.UsernameAttribute, "sAMAccountName")
+	result.WindowsADDisplayAttribute = firstNonEmpty(settings[SettingKeyWindowsADDisplayAttribute], base.DisplayAttribute, "displayName")
+	result.WindowsADIDAttribute = firstNonEmpty(settings[SettingKeyWindowsADIDAttribute], base.IDAttribute, "objectGUID")
+	result.WindowsADStartTLS = boolSettingOrDefault(settings, SettingKeyWindowsADStartTLS, base.StartTLS)
+	result.WindowsADSkipTLSVerify = boolSettingOrDefault(settings, SettingKeyWindowsADSkipTLSVerify, base.SkipTLSVerify)
+}
+
+func writeWindowsADSettingsUpdates(updates map[string]string, settings *SystemSettings) {
+	updates[SettingKeyWindowsADEnabled] = strconv.FormatBool(settings.WindowsADEnabled)
+	updates[SettingKeyWindowsADProviderName] = firstNonEmpty(settings.WindowsADProviderName, defaultWindowsADProviderName)
+	updates[SettingKeyWindowsADURL] = strings.TrimSpace(settings.WindowsADURL)
+	updates[SettingKeyWindowsADBaseDN] = strings.TrimSpace(settings.WindowsADBaseDN)
+	updates[SettingKeyWindowsADUserSearchBase] = strings.TrimSpace(settings.WindowsADUserSearchBase)
+	updates[SettingKeyWindowsADGroupSearchBase] = strings.TrimSpace(settings.WindowsADGroupSearchBase)
+	updates[SettingKeyWindowsADBindDN] = strings.TrimSpace(settings.WindowsADBindDN)
+	// An empty password keeps the stored secret; passwords are not trimmed.
+	if settings.WindowsADBindPassword != "" {
+		updates[SettingKeyWindowsADBindPassword] = settings.WindowsADBindPassword
+	}
+	updates[SettingKeyWindowsADUserFilter] = firstNonEmpty(settings.WindowsADUserFilter, defaultWindowsADUserFilter)
+	updates[SettingKeyWindowsADEmailAttribute] = firstNonEmpty(settings.WindowsADEmailAttribute, "mail")
+	updates[SettingKeyWindowsADUsernameAttribute] = firstNonEmpty(settings.WindowsADUsernameAttribute, "sAMAccountName")
+	updates[SettingKeyWindowsADDisplayAttribute] = firstNonEmpty(settings.WindowsADDisplayAttribute, "displayName")
+	updates[SettingKeyWindowsADIDAttribute] = firstNonEmpty(settings.WindowsADIDAttribute, "objectGUID")
+	updates[SettingKeyWindowsADStartTLS] = strconv.FormatBool(settings.WindowsADStartTLS)
+	updates[SettingKeyWindowsADSkipTLSVerify] = strconv.FormatBool(settings.WindowsADSkipTLSVerify)
+}
+
+func windowsADDefaultSettings() map[string]string {
+	defaults := map[string]string{SettingKeyWindowsADBindPassword: ""}
+	writeWindowsADSettingsUpdates(defaults, &SystemSettings{})
+	writeProviderDefaultGrantUpdates(defaults, windowsADAuthSourceDefaultKeys, ProviderDefaultGrantSettings{
+		Balance:       defaultAuthSourceBalance,
+		Concurrency:   defaultAuthSourceConcurrency,
+		Subscriptions: []DefaultSubscriptionSetting{},
+	})
+	return defaults
 }
 
 // SetOnUpdateCallback sets a callback function to be called when settings are updated

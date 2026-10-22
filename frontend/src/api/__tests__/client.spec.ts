@@ -311,6 +311,31 @@ describe('API Client', () => {
   // --- 401 Token 刷新 ---
 
   describe('401 Token 刷新', () => {
+    it.each(['/auth/login', '/auth/windows-ad/login'])('%s 凭据错误时不刷新或重试旧会话', async (url) => {
+      window.history.replaceState({}, '', '/login')
+      localStorage.setItem('auth_token', 'old-access-token')
+      localStorage.setItem('refresh_token', 'old-refresh-token')
+      const refresh = await import('@/api/tokenRefresh')
+      const refreshSpy = vi.spyOn(refresh, 'refreshAuthTokens')
+      const adapter = vi.fn().mockRejectedValueOnce({
+        response: {
+          status: 401,
+          data: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' },
+        },
+        config: { url, headers: { Authorization: 'Bearer old-access-token' } },
+      })
+      apiClient.defaults.adapter = adapter
+
+      await expect(apiClient.post(url, {})).rejects.toMatchObject({
+        status: 401,
+        code: 'INVALID_CREDENTIALS',
+      })
+      expect(refreshSpy).not.toHaveBeenCalled()
+      expect(adapter).toHaveBeenCalledTimes(1)
+      expect(sessionStorage.getItem('auth_expired')).toBeNull()
+      expect(localStorage.getItem('refresh_token')).toBeNull()
+    })
+
     it('无 refresh_token 时 401 清除 localStorage', async () => {
       localStorage.setItem('auth_token', 'expired-token')
       // 不设置 refresh_token

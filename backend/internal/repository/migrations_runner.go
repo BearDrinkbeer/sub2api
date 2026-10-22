@@ -86,8 +86,12 @@ var migrationChecksumCompatibilityRules = map[string]migrationChecksumCompatibil
 	"119_enforce_payment_orders_out_trade_no_unique.sql":      newMigrationChecksumCompatibilityRule("0bbe809ae48a9d811dabda1ba1c74955bd71c4a9cc610f9128816818dfa6c11e", "ebd2c67cce0116393fb4f1b5d5116a67c6aceb73820dfb5133d1ff6f36d72d34"),
 	"120_enforce_payment_orders_out_trade_no_unique_notx.sql": newMigrationChecksumCompatibilityRule("34aadc0db59a4e390f92a12b73bd74642d9724f33124f73638ae00089ea5e074", "e77921f79d539bc24575cb9c16cbe566d2b23ce816190343d0a7568f6a3fcf61", "707431450603e70a43ce9fbd61e0c12fa67da4875158ccefabacea069587ab22", "04b082b5a239c525154fe9185d324ee2b05ff90da9297e10dba19f9be79aa59a"),
 	"123_fix_legacy_auth_source_grant_on_signup_defaults.sql": newMigrationChecksumCompatibilityRule("2ce43c2cd89e9f9e1febd34a407ed9e84d177386c5544b6f02c1f58a21129f57", "6cd33422f215dcd1f486ab6f35c0ea5805d9ca69bb25906d94bc649156657145"),
-	"159_batch_image_foundation.sql":                          newMigrationChecksumCompatibilityRule("d902b70982025ec519749faf058aab7631e82c3f48167b9a4ae4db718eb72cce", "82da85b5d98e67a0507647b873a40373e84538e4adafdeed6767c0ac8b6570b2"),
-	"161_batch_image_pricing_snapshot.sql":                    newMigrationChecksumCompatibilityRule("4012af3e43636cb6af22e0176d59d1fcc70615c0f310194329461ae462c4fbd6", "96d915c9b7a6941ae99039e0ff3f1a61481eb9bddd933d11c6fadb2274554e87"),
+	// Keep existing AD rows valid while upgrading through the DingTalk migrations.
+	// Migration 247 reconciles databases that already applied the original versions.
+	"136_add_dingtalk_provider_type.sql":                newMigrationChecksumCompatibilityRule("bf908d0f325d0544ebf3411314799530e8bbfbd38b75c31a00856d430af2d098", "72b6005ff64cddd845615e249d95858010dd6d3bd7a1d24b3e9a32eb03b76eb8"),
+	"140_extend_user_provider_default_grants_check.sql": newMigrationChecksumCompatibilityRule("dd69eb5bfeed052aacf3a63318d80c00cb50646adb4749d8b96513796c1d6217", "6dc603ebee5a42ff53d9f4c69eda12075a08c2fa1c33271157effc6e11de2d83"),
+	"159_batch_image_foundation.sql":                    newMigrationChecksumCompatibilityRule("d902b70982025ec519749faf058aab7631e82c3f48167b9a4ae4db718eb72cce", "82da85b5d98e67a0507647b873a40373e84538e4adafdeed6767c0ac8b6570b2"),
+	"161_batch_image_pricing_snapshot.sql":              newMigrationChecksumCompatibilityRule("4012af3e43636cb6af22e0176d59d1fcc70615c0f310194329461ae462c4fbd6", "96d915c9b7a6941ae99039e0ff3f1a61481eb9bddd933d11c6fadb2274554e87"),
 	// 195 originally seeded mode=v2; flipped to v1 (safe default / opt-in v2). Existing DBs
 	// that already applied the v2 seed keep their row and the historical checksum.
 	"195_channel_monitor_mode.sql": newMigrationChecksumCompatibilityRule("13f3792f3e3e53ee96e26415c884cf8062c77172824b54fcc9a8c0c2b1f185ec", "4c74fe33ef2274cc72e1bb49671e651274532c034b29f5b2982c2a4c88d101a6"),

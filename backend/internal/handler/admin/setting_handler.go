@@ -236,6 +236,21 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		OIDCConnectUserInfoEmailPath:                           settings.OIDCConnectUserInfoEmailPath,
 		OIDCConnectUserInfoIDPath:                              settings.OIDCConnectUserInfoIDPath,
 		OIDCConnectUserInfoUsernamePath:                        settings.OIDCConnectUserInfoUsernamePath,
+		WindowsADEnabled:                                       settings.WindowsADEnabled,
+		WindowsADProviderName:                                  settings.WindowsADProviderName,
+		WindowsADURL:                                           settings.WindowsADURL,
+		WindowsADBaseDN:                                        settings.WindowsADBaseDN,
+		WindowsADUserSearchBase:                                settings.WindowsADUserSearchBase,
+		WindowsADGroupSearchBase:                               settings.WindowsADGroupSearchBase,
+		WindowsADBindDN:                                        settings.WindowsADBindDN,
+		WindowsADBindPasswordConfigured:                        settings.WindowsADBindPasswordConfigured,
+		WindowsADUserFilter:                                    settings.WindowsADUserFilter,
+		WindowsADEmailAttribute:                                settings.WindowsADEmailAttribute,
+		WindowsADUsernameAttribute:                             settings.WindowsADUsernameAttribute,
+		WindowsADDisplayAttribute:                              settings.WindowsADDisplayAttribute,
+		WindowsADIDAttribute:                                   settings.WindowsADIDAttribute,
+		WindowsADStartTLS:                                      settings.WindowsADStartTLS,
+		WindowsADSkipTLSVerify:                                 settings.WindowsADSkipTLSVerify,
 		GitHubOAuthEnabled:                                     settings.GitHubOAuthEnabled,
 		GitHubOAuthClientID:                                    settings.GitHubOAuthClientID,
 		GitHubOAuthClientSecretConfigured:                      settings.GitHubOAuthClientSecretConfigured,
@@ -535,6 +550,12 @@ func systemSettingsResponseData(settings dto.SystemSettings, authSourceDefaults 
 	data["auth_source_default_github_platform_quotas"] = authSourceDefaults.GitHub.PlatformQuotas
 	data["auth_source_default_google_platform_quotas"] = authSourceDefaults.Google.PlatformQuotas
 	data["auth_source_default_dingtalk_platform_quotas"] = authSourceDefaults.DingTalk.PlatformQuotas
+	data["auth_source_default_windows_ad_balance"] = authSourceDefaults.WindowsAD.Balance
+	data["auth_source_default_windows_ad_concurrency"] = authSourceDefaults.WindowsAD.Concurrency
+	data["auth_source_default_windows_ad_subscriptions"] = authSourceDefaults.WindowsAD.Subscriptions
+	data["auth_source_default_windows_ad_grant_on_signup"] = authSourceDefaults.WindowsAD.GrantOnSignup
+	data["auth_source_default_windows_ad_grant_on_first_bind"] = authSourceDefaults.WindowsAD.GrantOnFirstBind
+	data["auth_source_default_windows_ad_platform_quotas"] = authSourceDefaults.WindowsAD.PlatformQuotas
 	data["force_email_on_third_party_signup"] = authSourceDefaults.ForceEmailOnThirdPartySignup
 
 	return data

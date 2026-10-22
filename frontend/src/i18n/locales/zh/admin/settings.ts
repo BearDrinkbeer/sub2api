@@ -1217,6 +1217,27 @@ export default {
         frontendRedirectUrlPlaceholder: '/auth/wechat/callback',
         frontendRedirectUrlHint: '通常用于前端路由回调地址，需与后端配置保持一致。'
       },
+      windowsAD: {
+        title: 'Active Directory 配置',
+        enabled: '启用 AD 认证',
+        statusEnabled: '已启用',
+        statusDisabled: '未启用',
+        url: 'AD 服务器地址 (LDAP URL)',
+        baseDN: 'Base DN',
+        bindDN: '绑定账号 (Bind DN)',
+        bindPassword: '绑定密码',
+        bindPasswordConfigured: '留空则保留当前密码',
+        bindPasswordPlaceholder: '输入服务账号密码',
+        userSearchBase: '用户搜索路径 (User Search Base)',
+        userFilter: '用户搜索过滤器',
+        groupSearchBase: '组/部门搜索路径 (可选)',
+        startTLS: '启用 StartTLS',
+        emailAttribute: '邮箱属性',
+        usernameAttribute: '用户名属性',
+        displayAttribute: '显示名属性',
+        idAttribute: '唯一 ID 属性',
+        skipTLSVerify: '跳过 TLS 证书校验',
+      },
       authSourceDefaults: {
         title: '认证来源默认值',
         description: '按注册来源配置新用户默认余额、并发、订阅与授权策略。',
@@ -1224,6 +1245,10 @@ export default {
         requireEmailHint: '启用后，Linux DO、OIDC、微信注册缺少邮箱时必须先补充邮箱地址。',
         enabledHint: '以下默认值会在该来源注册新用户时发放；首次绑定时授权仅作用于已有账号绑定该来源。',
         sources: {
+          windows_ad: {
+            title: 'Windows AD',
+            description: '通过 Windows AD 域账号首次注册或首次绑定时应用。'
+          },
           email: {
             title: '邮箱注册',
             description: '适用于邮箱密码注册的新用户默认配额。'

@@ -82,6 +82,7 @@ type Config struct {
 	WeChat                  WeChatConnectConfig           `mapstructure:"wechat_connect"`
 	OIDC                    OIDCConnectConfig             `mapstructure:"oidc_connect"`
 	DingTalk                DingTalkConnectConfig         `mapstructure:"dingtalk_connect"`
+	WindowsAD               WindowsADConfig               `mapstructure:"windows_ad"`
 	GitHubOAuth             EmailOAuthProviderConfig      `mapstructure:"github_oauth"`
 	GoogleOAuth             EmailOAuthProviderConfig      `mapstructure:"google_oauth"`
 	Default                 DefaultConfig                 `mapstructure:"default"`
@@ -408,6 +409,24 @@ type DingTalkConnectConfig struct {
 	EnableAttributeSync          bool     `mapstructure:"enable_attribute_sync"`
 	AttributeSyncFields          []string `mapstructure:"attribute_sync_fields"`
 	AttributeSyncOverwritePolicy string   `mapstructure:"attribute_sync_overwrite_policy"`
+}
+
+type WindowsADConfig struct {
+	Enabled           bool   `mapstructure:"enabled"`
+	ProviderName      string `mapstructure:"provider_name"`
+	URL               string `mapstructure:"url"`
+	BaseDN            string `mapstructure:"base_dn"`
+	UserSearchBase    string `mapstructure:"user_search_base"`
+	GroupSearchBase   string `mapstructure:"group_search_base"`
+	BindDN            string `mapstructure:"bind_dn"`
+	BindPassword      string `mapstructure:"bind_password" json:"-"`
+	UserFilter        string `mapstructure:"user_filter"`
+	EmailAttribute    string `mapstructure:"email_attribute"`
+	UsernameAttribute string `mapstructure:"username_attribute"`
+	DisplayAttribute  string `mapstructure:"display_attribute"`
+	IDAttribute       string `mapstructure:"id_attribute"`
+	StartTLS          bool   `mapstructure:"start_tls"`
+	SkipTLSVerify     bool   `mapstructure:"skip_tls_verify"`
 }
 
 type EmailOAuthProviderConfig struct {
@@ -2213,6 +2232,23 @@ func setDefaults() {
 	viper.SetDefault("dingtalk_connect.corp_restriction_policy", "none")
 	viper.SetDefault("dingtalk_connect.require_email", true)
 	viper.SetDefault("dingtalk_connect.username_overwrite_policy", "if_empty")
+
+	// Windows Active Directory LDAP login.
+	viper.SetDefault("windows_ad.enabled", false)
+	viper.SetDefault("windows_ad.provider_name", "Windows AD")
+	viper.SetDefault("windows_ad.url", "")
+	viper.SetDefault("windows_ad.base_dn", "")
+	viper.SetDefault("windows_ad.user_search_base", "")
+	viper.SetDefault("windows_ad.group_search_base", "")
+	viper.SetDefault("windows_ad.bind_dn", "")
+	viper.SetDefault("windows_ad.bind_password", "")
+	viper.SetDefault("windows_ad.user_filter", "(&(objectClass=user)(!(objectClass=computer))(|(sAMAccountName={username})(userPrincipalName={username})))")
+	viper.SetDefault("windows_ad.email_attribute", "mail")
+	viper.SetDefault("windows_ad.username_attribute", "sAMAccountName")
+	viper.SetDefault("windows_ad.display_attribute", "displayName")
+	viper.SetDefault("windows_ad.id_attribute", "objectGUID")
+	viper.SetDefault("windows_ad.start_tls", false)
+	viper.SetDefault("windows_ad.skip_tls_verify", false)
 
 	// Database
 	viper.SetDefault("database.host", "localhost")

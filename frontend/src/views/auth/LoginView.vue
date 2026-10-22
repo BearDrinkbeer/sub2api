@@ -138,62 +138,102 @@
           @reject="rejectLoginAgreement"
           @open="showAgreementModal = true"
         />
-
-        <div v-if="showPasskeyLogin || showOAuthLogin" class="space-y-3 pt-1">
-          <div class="flex items-center gap-3">
-            <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
-            <span class="text-xs text-gray-500 dark:text-dark-400">
-              {{ t('auth.oauthOrContinue') }}
-            </span>
-            <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
-          </div>
-
-          <button
-            v-if="showPasskeyLogin"
-            type="button"
-            class="btn btn-secondary w-full"
-            :disabled="authActionDisabled"
-            @click="handlePasskeyLogin"
-          >
-            <Icon name="key" size="md" class="mr-2" />
-            {{ passkeyLoading ? t('auth.passkeySigningIn') : t('auth.passkeySignIn') }}
-          </button>
-
-          <EmailOAuthButtons
-            :disabled="authActionDisabled"
-            :github-enabled="githubOAuthEnabled"
-            :google-enabled="googleOAuthEnabled"
-            :show-divider="false"
-            @start="handleOAuthStart"
-          />
-
-          <LinuxDoOAuthSection
-            v-if="linuxdoOAuthEnabled"
-            :disabled="authActionDisabled"
-            :show-divider="false"
-            @start="handleOAuthStart"
-          />
-          <DingTalkOAuthSection
-            v-if="dingtalkOAuthEnabled"
-            :disabled="authActionDisabled"
-            :show-divider="false"
-            @start="handleOAuthStart"
-          />
-          <WechatOAuthSection
-            v-if="wechatOAuthEnabled"
-            :disabled="authActionDisabled"
-            :show-divider="false"
-            @start="handleOAuthStart"
-          />
-          <OidcOAuthSection
-            v-if="oidcOAuthEnabled"
-            :disabled="authActionDisabled"
-            :provider-name="oidcOAuthProviderName"
-            :show-divider="false"
-            @start="handleOAuthStart"
-          />
-        </div>
       </form>
+
+      <div v-if="showPasskeyLogin || showOAuthLogin" class="space-y-3 pt-1">
+        <div class="flex items-center gap-3">
+          <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
+          <span class="text-xs text-gray-500 dark:text-dark-400">
+            {{ t('auth.oauthOrContinue') }}
+          </span>
+          <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
+        </div>
+
+        <button
+          v-if="showPasskeyLogin"
+          type="button"
+          class="btn btn-secondary w-full"
+          :disabled="authActionDisabled"
+          @click="handlePasskeyLogin"
+        >
+          <Icon name="key" size="md" class="mr-2" />
+          {{ passkeyLoading ? t('auth.passkeySigningIn') : t('auth.passkeySignIn') }}
+        </button>
+
+        <EmailOAuthButtons
+          :disabled="authActionDisabled"
+          :github-enabled="githubOAuthEnabled"
+          :google-enabled="googleOAuthEnabled"
+          :show-divider="false"
+          @start="handleOAuthStart"
+        />
+
+        <LinuxDoOAuthSection
+          v-if="linuxdoOAuthEnabled"
+          :disabled="authActionDisabled"
+          :show-divider="false"
+          @start="handleOAuthStart"
+        />
+        <DingTalkOAuthSection
+          v-if="dingtalkOAuthEnabled"
+          :disabled="authActionDisabled"
+          :show-divider="false"
+          @start="handleOAuthStart"
+        />
+        <WechatOAuthSection
+          v-if="wechatOAuthEnabled"
+          :disabled="authActionDisabled"
+          :show-divider="false"
+          @start="handleOAuthStart"
+        />
+        <OidcOAuthSection
+          v-if="oidcOAuthEnabled"
+          :disabled="authActionDisabled"
+          :provider-name="oidcOAuthProviderName"
+          :show-divider="false"
+          @start="handleOAuthStart"
+        />
+        <form
+          v-if="windowsADEnabled && !backendModeEnabled"
+          :aria-label="windowsADProviderName"
+          class="rounded-lg border border-gray-200 p-3 dark:border-dark-700"
+          @submit.prevent="handleWindowsADLogin"
+        >
+          <div class="mb-3 flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-dark-100">
+            <Icon name="shield" size="sm" class="text-primary-500" />
+            <span>{{ windowsADProviderName }}</span>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <input
+              v-model="windowsADForm.username"
+              type="text"
+              required
+              autocomplete="username"
+              :disabled="authActionDisabled"
+              class="input"
+              :aria-label="t('auth.windowsADUsernamePlaceholder')"
+              :placeholder="t('auth.windowsADUsernamePlaceholder')"
+            />
+            <input
+              v-model="windowsADForm.password"
+              type="password"
+              required
+              autocomplete="current-password"
+              :disabled="authActionDisabled"
+              class="input"
+              :aria-label="t('auth.passwordLabel')"
+              :placeholder="t('auth.passwordPlaceholder')"
+            />
+          </div>
+          <button
+            type="submit"
+            :disabled="authActionDisabled || (turnstileEnabled && !turnstileToken)"
+            class="btn btn-secondary mt-3 w-full"
+          >
+            {{ isLoading ? t('auth.signingIn') : t('auth.windowsADSignIn', { provider: windowsADProviderName }) }}
+          </button>
+        </form>
+      </div>
     </div>
 
     <!-- Footer -->
@@ -286,6 +326,8 @@ const wechatOAuthEnabled = ref<boolean>(false)
 const backendModeEnabled = ref<boolean>(false)
 const oidcOAuthEnabled = ref<boolean>(false)
 const oidcOAuthProviderName = ref<string>('OIDC')
+const windowsADEnabled = ref<boolean>(false)
+const windowsADProviderName = ref<string>('Windows AD')
 const githubOAuthEnabled = ref<boolean>(false)
 const googleOAuthEnabled = ref<boolean>(false)
 const passwordResetEnabled = ref<boolean>(false)
@@ -330,6 +372,11 @@ const formData = reactive({
   password: ''
 })
 
+const windowsADForm = reactive({
+  username: '',
+  password: ''
+})
+
 const errors = reactive({
   email: '',
   password: '',
@@ -359,6 +406,7 @@ const showOAuthLogin = computed(
       dingtalkOAuthEnabled.value ||
       wechatOAuthEnabled.value ||
       oidcOAuthEnabled.value ||
+      windowsADEnabled.value ||
       githubOAuthEnabled.value ||
       googleOAuthEnabled.value)
 )
@@ -398,6 +446,8 @@ onMounted(async () => {
     backendModeEnabled.value = settings.backend_mode_enabled
     oidcOAuthEnabled.value = settings.oidc_oauth_enabled
     oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || 'OIDC'
+    windowsADEnabled.value = settings.windows_ad_enabled === true
+    windowsADProviderName.value = settings.windows_ad_provider_name || 'Windows AD'
     githubOAuthEnabled.value = settings.github_oauth_enabled
     googleOAuthEnabled.value = settings.google_oauth_enabled
     backendModeEnabled.value = settings.backend_mode_enabled
@@ -693,6 +743,61 @@ async function handleOAuthStart(request: OAuthLoginStart): Promise<void> {
     appStore.showError(errorMessage.value)
   } finally {
     resetCaptchaProof()
+    isLoading.value = false
+  }
+}
+
+async function handleWindowsADLogin(): Promise<void> {
+  errorMessage.value = ''
+  if (agreementGateActive.value) {
+    appStore.showWarning(t('legal.loginAgreementPrompt.loginRequiredWarning'))
+    if (loginAgreementMode.value !== 'checkbox') showAgreementModal.value = true
+    return
+  }
+  if (authActionDisabled.value || !windowsADEnabled.value || backendModeEnabled.value) return
+  if (!windowsADForm.username.trim() || !windowsADForm.password) {
+    appStore.showError(t('auth.windowsADRequired'))
+    return
+  }
+  if (turnstileEnabled.value && !turnstileToken.value) {
+    appStore.showError(t('auth.completeVerification'))
+    return
+  }
+
+  isLoading.value = true
+  try {
+    if (!(await acquireActionProof())) return
+
+    const response = await authStore.loginWindowsAD({
+      username: windowsADForm.username.trim(),
+      password: windowsADForm.password,
+      turnstile_token:
+        turnstileEnabled.value || aliyunCaptchaEnabled.value ? turnstileToken.value : undefined,
+      tencent_captcha_ticket: tencentCaptchaEnabled.value ? turnstileToken.value : undefined,
+      tencent_captcha_randstr: tencentCaptchaEnabled.value
+        ? tencentCaptchaRandstr.value
+        : undefined
+    })
+    windowsADForm.password = ''
+    if (isTotp2FARequired(response)) {
+      const totpResponse = response as TotpLoginResponse
+      totpTempToken.value = totpResponse.temp_token || ''
+      totpUserEmailMasked.value = totpResponse.user_email_masked || ''
+      show2FAModal.value = true
+      isLoading.value = false
+      return
+    }
+    clearAllAffiliateReferralCodes()
+    appStore.showSuccess(t('auth.loginSuccess'))
+    const redirectTo = (router.currentRoute.value.query.redirect as string) || '/dashboard'
+    await router.push(redirectTo)
+  } catch (error: unknown) {
+    errorMessage.value = extractI18nErrorMessage(error, t, 'auth.errors', t('auth.loginFailed'))
+    appStore.showError(errorMessage.value)
+  } finally {
+    if (captchaEnabled.value) {
+      resetCaptchaProof()
+    }
     isLoading.value = false
   }
 }

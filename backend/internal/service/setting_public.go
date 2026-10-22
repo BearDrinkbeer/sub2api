@@ -218,6 +218,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingBalancePayDisabled,
 		SettingKeyOIDCConnectEnabled,
 		SettingKeyOIDCConnectProviderName,
+		SettingKeyWindowsADEnabled,
+		SettingKeyWindowsADProviderName,
 		SettingKeyGitHubOAuthEnabled,
 		SettingKeyGitHubOAuthClientID,
 		SettingKeyGitHubOAuthClientSecret,
@@ -275,6 +277,13 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		oidcProviderName = "OIDC"
 	}
 	gitHubEnabled := s.emailOAuthPublicEnabled(settings, "github")
+	windowsADProviderName := strings.TrimSpace(settings[SettingKeyWindowsADProviderName])
+	if windowsADProviderName == "" && s.cfg != nil {
+		windowsADProviderName = strings.TrimSpace(s.cfg.WindowsAD.ProviderName)
+	}
+	if windowsADProviderName == "" {
+		windowsADProviderName = defaultWindowsADProviderName
+	}
 	googleEnabled := s.emailOAuthPublicEnabled(settings, "google")
 	weChatEnabled, weChatOpenEnabled, weChatMPEnabled, weChatMobileEnabled := s.weChatOAuthCapabilitiesFromSettings(settings)
 
@@ -350,6 +359,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		PaymentBalanceDisabled:              settings[SettingBalancePayDisabled] == "true",
 		OIDCOAuthEnabled:                    oidcEnabled,
 		OIDCOAuthProviderName:               oidcProviderName,
+		WindowsADEnabled:                    boolSettingOrDefault(settings, SettingKeyWindowsADEnabled, false),
+		WindowsADProviderName:               windowsADProviderName,
 		GitHubOAuthEnabled:                  gitHubEnabled,
 		GoogleOAuthEnabled:                  googleEnabled,
 		BalanceLowNotifyEnabled:             settings[SettingKeyBalanceLowNotifyEnabled] == "true",
@@ -606,6 +617,8 @@ type PublicSettingsInjectionPayload struct {
 	WeChatOAuthMobileEnabled            bool                     `json:"wechat_oauth_mobile_enabled"`
 	OIDCOAuthEnabled                    bool                     `json:"oidc_oauth_enabled"`
 	OIDCOAuthProviderName               string                   `json:"oidc_oauth_provider_name"`
+	WindowsADEnabled                    bool                     `json:"windows_ad_enabled"`
+	WindowsADProviderName               string                   `json:"windows_ad_provider_name"`
 	GitHubOAuthEnabled                  bool                     `json:"github_oauth_enabled"`
 	GoogleOAuthEnabled                  bool                     `json:"google_oauth_enabled"`
 	BackendModeEnabled                  bool                     `json:"backend_mode_enabled"`
@@ -700,6 +713,8 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		WeChatOAuthMobileEnabled:            settings.WeChatOAuthMobileEnabled,
 		OIDCOAuthEnabled:                    settings.OIDCOAuthEnabled,
 		OIDCOAuthProviderName:               settings.OIDCOAuthProviderName,
+		WindowsADEnabled:                    settings.WindowsADEnabled,
+		WindowsADProviderName:               settings.WindowsADProviderName,
 		GitHubOAuthEnabled:                  settings.GitHubOAuthEnabled,
 		GoogleOAuthEnabled:                  settings.GoogleOAuthEnabled,
 		BackendModeEnabled:                  settings.BackendModeEnabled,

@@ -95,6 +95,32 @@ func (s *UserRepoSuite) TestUpdate_PersistsSignupSourceAndActivityTimestamps() {
 	s.Require().True(got.LastActiveAt.Equal(lastActiveAt))
 }
 
+func (s *UserRepoSuite) TestWindowsADSignupSourceRoundTrip() {
+	created := s.mustCreateUser(&service.User{Email: "windows-ad-source@example.com", SignupSource: "windows_ad"})
+	s.Require().Equal("windows_ad", created.SignupSource)
+	got, err := s.repo.GetByID(s.ctx, created.ID)
+	s.Require().NoError(err)
+	s.Require().Equal("windows_ad", got.SignupSource)
+
+	created.SignupSource = "email"
+	s.Require().NoError(s.repo.Update(s.ctx, created, service.UserUpdateFields{SignupSource: true}))
+	created.SignupSource = "windows_ad"
+	s.Require().NoError(s.repo.Update(s.ctx, created, service.UserUpdateFields{SignupSource: true}))
+	got, err = s.repo.GetByID(s.ctx, created.ID)
+	s.Require().NoError(err)
+	s.Require().Equal("windows_ad", got.SignupSource)
+}
+
+func (s *UserRepoSuite) TestWindowsADSyntheticEmailDoesNotCreateVerifiedEmailIdentity() {
+	created := s.mustCreateUser(&service.User{
+		Email:        "objectguid-existing" + service.WindowsADSyntheticEmailDomain,
+		SignupSource: "windows_ad",
+	})
+	identities, err := s.repo.ListUserAuthIdentities(s.ctx, created.ID)
+	s.Require().NoError(err)
+	s.Require().Empty(identities)
+}
+
 func (s *UserRepoSuite) TestListWithFilters_SortByLastActiveAtAsc() {
 	earlier := time.Now().Add(-3 * time.Hour).UTC().Truncate(time.Microsecond)
 	later := time.Now().Add(-45 * time.Minute).UTC().Truncate(time.Microsecond)

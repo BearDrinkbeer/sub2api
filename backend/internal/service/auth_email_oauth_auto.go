@@ -23,6 +23,8 @@ type EmailOAuthIdentityInput struct {
 	DisplayName      string
 	AvatarURL        string
 	UpstreamMetadata map[string]any
+	// Credential-based providers finish backend-mode and TOTP checks before issuing a session.
+	DeferSession bool
 }
 
 func (s *AuthService) LoginOrRegisterVerifiedEmailOAuth(ctx context.Context, input EmailOAuthIdentityInput) (*TokenPair, *User, error) {
@@ -60,7 +62,7 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	}
 
 	providerType := normalizeOAuthSignupSource(input.ProviderType)
-	if providerType != "github" && providerType != "google" && providerType != "oidc" {
+	if providerType != "github" && providerType != "google" && providerType != "oidc" && providerType != "windows_ad" {
 		return nil, nil, infraerrors.BadRequest("OAUTH_PROVIDER_INVALID", "oauth provider is invalid")
 	}
 	providerKey := strings.TrimSpace(input.ProviderKey)
@@ -82,11 +84,14 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	if _, err := mail.ParseAddress(email); err != nil {
 		return nil, nil, infraerrors.BadRequest("INVALID_EMAIL", "invalid email")
 	}
-	if isReservedEmail(email) {
+	if isReservedEmail(email) && !(providerType == "windows_ad" && strings.HasSuffix(email, WindowsADSyntheticEmailDomain)) {
 		return nil, nil, ErrEmailReserved
 	}
-	if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
-		return nil, nil, err
+	// AD account eligibility is controlled by the directory, not public signup policy.
+	if providerType != "windows_ad" {
+		if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	identityUser, err := s.findEmailOAuthIdentityOwner(ctx, providerType, providerKey, providerSubject)
@@ -103,6 +108,9 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 		user, err = s.userRepo.GetByEmail(ctx, email)
 		if err != nil {
 			if errors.Is(err, ErrUserNotFound) {
+				if providerType == "windows_ad" && s.settingService != nil && s.settingService.IsBackendModeEnabled(ctx) {
+					return nil, nil, infraerrors.Forbidden("BACKEND_MODE_ADMIN_ONLY", "Backend mode is active. Only admin login is allowed.")
+				}
 				user, err = s.createEmailOAuthUser(ctx, email, input.Username, providerType, invitationCode, affiliateCode)
 				if err != nil {
 					return nil, nil, err
@@ -145,6 +153,9 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	} else {
 		user = s.applyOAuthSignupPromoCode(ctx, user, promoCode)
 	}
+	if input.DeferSession {
+		return nil, user, nil
+	}
 	s.RecordSuccessfulLogin(ctx, user.ID)
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
@@ -155,15 +166,19 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 }
 
 func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username, providerType, invitationCode, affiliateCode string) (*User, error) {
-	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
+	if !s.canAutoProvisionOAuthUser(ctx, providerType) {
 		return nil, ErrRegDisabled
 	}
-	invitationRedeemCode, err := s.validateOAuthRegistrationInvitation(ctx, invitationCode)
-	if err != nil {
-		if errors.Is(err, ErrInvitationCodeRequired) {
-			return nil, ErrOAuthInvitationRequired
+	var invitationRedeemCode *RedeemCode
+	if providerType != "windows_ad" {
+		var err error
+		invitationRedeemCode, err = s.validateOAuthRegistrationInvitation(ctx, invitationCode)
+		if err != nil {
+			if errors.Is(err, ErrInvitationCodeRequired) {
+				return nil, ErrOAuthInvitationRequired
+			}
+			return nil, err
 		}
-		return nil, err
 	}
 
 	randomPassword, err := randomHexString(32)
@@ -212,6 +227,14 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 		}
 	}
 	return user, nil
+}
+
+func (s *AuthService) canAutoProvisionOAuthUser(ctx context.Context, providerType string) bool {
+	providerType = normalizeOAuthSignupSource(providerType)
+	if providerType == "windows_ad" {
+		return true
+	}
+	return s.settingService != nil && s.settingService.IsRegistrationEnabled(ctx)
 }
 
 func (s *AuthService) findEmailOAuthIdentityOwner(ctx context.Context, providerType, providerKey, providerSubject string) (*User, error) {

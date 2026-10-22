@@ -5,6 +5,7 @@ package server_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"math"
@@ -860,6 +861,12 @@ func TestAPIContracts(t *testing.T) {
 					"auth_source_default_dingtalk_subscriptions": [],
 					"auth_source_default_dingtalk_grant_on_signup": false,
 					"auth_source_default_dingtalk_grant_on_first_bind": false,
+					"auth_source_default_windows_ad_balance": 0,
+					"auth_source_default_windows_ad_concurrency": 5,
+					"auth_source_default_windows_ad_subscriptions": [],
+					"auth_source_default_windows_ad_grant_on_signup": false,
+					"auth_source_default_windows_ad_grant_on_first_bind": false,
+					"auth_source_default_windows_ad_platform_quotas": null,
 					"force_email_on_third_party_signup": false,
 					"default_concurrency": 5,
 					"default_balance": 1.25,
@@ -1027,7 +1034,22 @@ func TestAPIContracts(t *testing.T) {
 					"wechat_connect_redirect_url": "",
 					"wechat_connect_frontend_redirect_url": "/auth/wechat/callback",
 					"wechat_connect_scopes": "snsapi_login",
-					"allow_user_view_error_requests": false
+					"allow_user_view_error_requests": false,
+					"windows_ad_enabled": false,
+					"windows_ad_provider_name": "Windows AD",
+					"windows_ad_url": "",
+					"windows_ad_base_dn": "",
+					"windows_ad_user_search_base": "",
+					"windows_ad_group_search_base": "",
+					"windows_ad_bind_dn": "",
+					"windows_ad_bind_password_configured": false,
+					"windows_ad_user_filter": "(&(objectClass=user)(!(objectClass=computer))(|(sAMAccountName={username})(userPrincipalName={username})))",
+					"windows_ad_username_attribute": "sAMAccountName",
+					"windows_ad_email_attribute": "mail",
+					"windows_ad_display_attribute": "displayName",
+					"windows_ad_id_attribute": "objectGUID",
+					"windows_ad_start_tls": false,
+					"windows_ad_skip_tls_verify": false
 				}
 			}`,
 		},
@@ -1384,8 +1406,29 @@ func TestAPIContracts(t *testing.T) {
 					"auth_source_default_dingtalk_subscriptions": [],
 					"auth_source_default_dingtalk_grant_on_signup": false,
 					"auth_source_default_dingtalk_grant_on_first_bind": false,
+					"auth_source_default_windows_ad_balance": 0,
+					"auth_source_default_windows_ad_concurrency": 5,
+					"auth_source_default_windows_ad_subscriptions": [],
+					"auth_source_default_windows_ad_grant_on_signup": false,
+					"auth_source_default_windows_ad_grant_on_first_bind": false,
+					"auth_source_default_windows_ad_platform_quotas": null,
 					"force_email_on_third_party_signup": false,
-					"allow_user_view_error_requests": false
+					"allow_user_view_error_requests": false,
+					"windows_ad_enabled": false,
+					"windows_ad_provider_name": "Windows AD",
+					"windows_ad_url": "",
+					"windows_ad_base_dn": "",
+					"windows_ad_user_search_base": "",
+					"windows_ad_group_search_base": "",
+					"windows_ad_bind_dn": "",
+					"windows_ad_bind_password_configured": false,
+					"windows_ad_user_filter": "(&(objectClass=user)(!(objectClass=computer))(|(sAMAccountName={username})(userPrincipalName={username})))",
+					"windows_ad_username_attribute": "sAMAccountName",
+					"windows_ad_email_attribute": "mail",
+					"windows_ad_display_attribute": "displayName",
+					"windows_ad_id_attribute": "objectGUID",
+					"windows_ad_start_tls": false,
+					"windows_ad_skip_tls_verify": false
 				}
 			}`,
 		},
@@ -1425,6 +1468,67 @@ func TestAPIContracts(t *testing.T) {
 			status, body := doRequest(t, deps.router, tt.method, tt.path, tt.body, tt.headers)
 			require.Equal(t, tt.wantStatus, status)
 			require.JSONEq(t, tt.wantJSON, body)
+		})
+	}
+}
+
+func TestWindowsADSettingsContractDoesNotExposeBindPassword(t *testing.T) {
+	for _, stored := range []bool{false, true} {
+		name := "config"
+		if stored {
+			name = "database"
+		}
+		t.Run(name, func(t *testing.T) {
+			deps := newContractDeps(t)
+			deps.cfg.WindowsAD = config.WindowsADConfig{
+				Enabled:      true,
+				ProviderName: "Company AD",
+				URL:          "ldaps://ad.example.com:636",
+				BaseDN:       "DC=example,DC=com",
+				BindPassword: "config-ad-bind-secret",
+			}
+			deps.settingRepo.SetAll(map[string]string{
+				service.SettingKeyWindowsADEnabled: "true",
+			})
+			if stored {
+				deps.settingRepo.SetAll(map[string]string{
+					service.SettingKeyWindowsADEnabled:      "true",
+					service.SettingKeyWindowsADBindPassword: "database-ad-bind-secret",
+				})
+			}
+			settings, err := service.NewSettingService(deps.settingRepo, deps.cfg).GetAllSettings(context.Background())
+			require.NoError(t, err)
+			expectedSecret := "config-ad-bind-secret"
+			if stored {
+				expectedSecret = "database-ad-bind-secret"
+			}
+			require.Equal(t, expectedSecret, settings.WindowsADBindPassword)
+			for _, value := range []any{deps.cfg.WindowsAD, settings} {
+				raw, err := json.Marshal(value)
+				require.NoError(t, err)
+				var sanitized map[string]any
+				require.NoError(t, json.Unmarshal(raw, &sanitized))
+				require.NotContains(t, sanitized, "BindPassword")
+				require.NotContains(t, sanitized, "WindowsADBindPassword")
+				require.NotContains(t, sanitized, "bind_password")
+				require.NotContains(t, sanitized, "windows_ad_bind_password")
+				require.NotContains(t, string(raw), "config-ad-bind-secret")
+				require.NotContains(t, string(raw), "database-ad-bind-secret")
+			}
+
+			status, body := doRequest(t, deps.router, http.MethodGet, "/api/v1/admin/settings", "", nil)
+			require.Equal(t, http.StatusOK, status)
+			var payload struct {
+				Data map[string]any `json:"data"`
+			}
+			require.NoError(t, json.Unmarshal([]byte(body), &payload))
+			require.Equal(t, true, payload.Data["windows_ad_enabled"])
+			require.Equal(t, "Company AD", payload.Data["windows_ad_provider_name"])
+			require.Equal(t, "ldaps://ad.example.com:636", payload.Data["windows_ad_url"])
+			require.Equal(t, true, payload.Data["windows_ad_bind_password_configured"])
+			require.NotContains(t, payload.Data, "windows_ad_bind_password")
+			require.NotContains(t, body, "config-ad-bind-secret")
+			require.NotContains(t, body, "database-ad-bind-secret")
 		})
 	}
 }

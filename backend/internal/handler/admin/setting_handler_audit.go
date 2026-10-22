@@ -32,6 +32,51 @@ func (h *SettingHandler) auditSettingsUpdate(c *gin.Context, before *service.Sys
 
 func diffSettings(before *service.SystemSettings, after *service.SystemSettings, beforeAuthSourceDefaults *service.AuthSourceDefaultSettings, afterAuthSourceDefaults *service.AuthSourceDefaultSettings, req UpdateSettingsRequest) []string {
 	changed := make([]string, 0, 20)
+	if before.WindowsADEnabled != after.WindowsADEnabled {
+		changed = append(changed, service.SettingKeyWindowsADEnabled)
+	}
+	if before.WindowsADProviderName != after.WindowsADProviderName {
+		changed = append(changed, service.SettingKeyWindowsADProviderName)
+	}
+	if before.WindowsADURL != after.WindowsADURL {
+		changed = append(changed, service.SettingKeyWindowsADURL)
+	}
+	if before.WindowsADBaseDN != after.WindowsADBaseDN {
+		changed = append(changed, service.SettingKeyWindowsADBaseDN)
+	}
+	if before.WindowsADUserSearchBase != after.WindowsADUserSearchBase {
+		changed = append(changed, service.SettingKeyWindowsADUserSearchBase)
+	}
+	if before.WindowsADGroupSearchBase != after.WindowsADGroupSearchBase {
+		changed = append(changed, service.SettingKeyWindowsADGroupSearchBase)
+	}
+	if before.WindowsADBindDN != after.WindowsADBindDN {
+		changed = append(changed, service.SettingKeyWindowsADBindDN)
+	}
+	if req.WindowsADBindPassword != "" {
+		changed = append(changed, service.SettingKeyWindowsADBindPassword)
+	}
+	if before.WindowsADUserFilter != after.WindowsADUserFilter {
+		changed = append(changed, service.SettingKeyWindowsADUserFilter)
+	}
+	if before.WindowsADEmailAttribute != after.WindowsADEmailAttribute {
+		changed = append(changed, service.SettingKeyWindowsADEmailAttribute)
+	}
+	if before.WindowsADUsernameAttribute != after.WindowsADUsernameAttribute {
+		changed = append(changed, service.SettingKeyWindowsADUsernameAttribute)
+	}
+	if before.WindowsADDisplayAttribute != after.WindowsADDisplayAttribute {
+		changed = append(changed, service.SettingKeyWindowsADDisplayAttribute)
+	}
+	if before.WindowsADIDAttribute != after.WindowsADIDAttribute {
+		changed = append(changed, service.SettingKeyWindowsADIDAttribute)
+	}
+	if before.WindowsADStartTLS != after.WindowsADStartTLS {
+		changed = append(changed, service.SettingKeyWindowsADStartTLS)
+	}
+	if before.WindowsADSkipTLSVerify != after.WindowsADSkipTLSVerify {
+		changed = append(changed, service.SettingKeyWindowsADSkipTLSVerify)
+	}
 	if before.RegistrationEnabled != after.RegistrationEnabled {
 		changed = append(changed, "registration_enabled")
 	}
@@ -645,6 +690,7 @@ func appendAuthSourceDefaultChanges(changed []string, before *service.AuthSource
 		{name: "github", before: before.GitHub, after: after.GitHub},
 		{name: "google", before: before.Google, after: after.Google},
 		{name: "dingtalk", before: before.DingTalk, after: after.DingTalk},
+		{name: "windows_ad", before: before.WindowsAD, after: after.WindowsAD},
 	}
 	for _, field := range fields {
 		if field.before.Balance != field.after.Balance {

@@ -1223,6 +1223,27 @@ export default {
         frontendRedirectUrlPlaceholder: '/auth/wechat/callback',
         frontendRedirectUrlHint: 'Usually the frontend route callback path; keep it aligned with the backend.'
       },
+      windowsAD: {
+        title: 'Active Directory Configuration',
+        enabled: 'Enable AD authentication',
+        statusEnabled: 'Enabled',
+        statusDisabled: 'Disabled',
+        url: 'AD server address (LDAP URL)',
+        baseDN: 'Base DN',
+        bindDN: 'Bind account (Bind DN)',
+        bindPassword: 'Bind password',
+        bindPasswordConfigured: 'Leave blank to keep the current password',
+        bindPasswordPlaceholder: 'Enter the service account password',
+        userSearchBase: 'User search base',
+        userFilter: 'User search filter',
+        groupSearchBase: 'Group / department search base (optional)',
+        startTLS: 'Enable StartTLS',
+        emailAttribute: 'Email attribute',
+        usernameAttribute: 'Username attribute',
+        displayAttribute: 'Display name attribute',
+        idAttribute: 'Unique ID attribute',
+        skipTLSVerify: 'Skip TLS certificate verification',
+      },
       authSourceDefaults: {
         title: 'Auth Source Defaults',
         description: 'Configure per-source default balance, concurrency, subscriptions, and grant rules.',
@@ -1230,6 +1251,10 @@ export default {
         requireEmailHint: 'When enabled, Linux DO, OIDC, and WeChat signups must provide an email before account creation.',
         enabledHint: 'These defaults apply when a new user registers through this source. Grant on first bind only applies when an existing user binds this source.',
         sources: {
+          windows_ad: {
+            title: 'Windows AD',
+            description: 'Applied on first signup or first bind through a Windows AD domain account.'
+          },
           email: {
             title: 'Email signup',
             description: 'Default quota grants for email-password signups.'

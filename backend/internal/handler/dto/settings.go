@@ -138,6 +138,22 @@ type SystemSettings struct {
 	OIDCConnectUserInfoIDPath         string `json:"oidc_connect_userinfo_id_path"`
 	OIDCConnectUserInfoUsernamePath   string `json:"oidc_connect_userinfo_username_path"`
 
+	WindowsADEnabled                bool   `json:"windows_ad_enabled"`
+	WindowsADProviderName           string `json:"windows_ad_provider_name"`
+	WindowsADURL                    string `json:"windows_ad_url"`
+	WindowsADBaseDN                 string `json:"windows_ad_base_dn"`
+	WindowsADUserSearchBase         string `json:"windows_ad_user_search_base"`
+	WindowsADGroupSearchBase        string `json:"windows_ad_group_search_base"`
+	WindowsADBindDN                 string `json:"windows_ad_bind_dn"`
+	WindowsADBindPasswordConfigured bool   `json:"windows_ad_bind_password_configured"`
+	WindowsADUserFilter             string `json:"windows_ad_user_filter"`
+	WindowsADEmailAttribute         string `json:"windows_ad_email_attribute"`
+	WindowsADUsernameAttribute      string `json:"windows_ad_username_attribute"`
+	WindowsADDisplayAttribute       string `json:"windows_ad_display_attribute"`
+	WindowsADIDAttribute            string `json:"windows_ad_id_attribute"`
+	WindowsADStartTLS               bool   `json:"windows_ad_start_tls"`
+	WindowsADSkipTLSVerify          bool   `json:"windows_ad_skip_tls_verify"`
+
 	GitHubOAuthEnabled                bool   `json:"github_oauth_enabled"`
 	GitHubOAuthClientID               string `json:"github_oauth_client_id"`
 	GitHubOAuthClientSecretConfigured bool   `json:"github_oauth_client_secret_configured"`
@@ -412,6 +428,8 @@ type PublicSettings struct {
 	WeChatOAuthMobileEnabled            bool                     `json:"wechat_oauth_mobile_enabled"`
 	OIDCOAuthEnabled                    bool                     `json:"oidc_oauth_enabled"`
 	OIDCOAuthProviderName               string                   `json:"oidc_oauth_provider_name"`
+	WindowsADEnabled                    bool                     `json:"windows_ad_enabled"`
+	WindowsADProviderName               string                   `json:"windows_ad_provider_name"`
 	GitHubOAuthEnabled                  bool                     `json:"github_oauth_enabled"`
 	GoogleOAuthEnabled                  bool                     `json:"google_oauth_enabled"`
 	BackendModeEnabled                  bool                     `json:"backend_mode_enabled"`

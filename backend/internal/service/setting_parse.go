@@ -272,6 +272,9 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyAllowUserViewErrorRequests: "false",
 	}
 
+	for key, value := range windowsADDefaultSettings() {
+		defaults[key] = value
+	}
 	return s.settingRepo.SetMultiple(ctx, defaults)
 }
 
@@ -992,6 +995,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	}
 
 	result.AllowUserViewErrorRequests = settings[SettingKeyAllowUserViewErrorRequests] == "true" // default false
+	s.parseWindowsADSettings(settings, result)
 
 	// Publish Grok default model_mapping options for accounts with empty mapping.
 	xai.SetRuntimeModelMappingOptions(xai.ModelMappingOptions{
