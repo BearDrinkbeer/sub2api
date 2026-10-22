@@ -84,7 +84,7 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	if _, err := mail.ParseAddress(email); err != nil {
 		return nil, nil, infraerrors.BadRequest("INVALID_EMAIL", "invalid email")
 	}
-	if isReservedEmail(email) && !(providerType == "windows_ad" && strings.HasSuffix(email, WindowsADSyntheticEmailDomain)) {
+	if isReservedEmail(email) && (providerType != "windows_ad" || !strings.HasSuffix(email, WindowsADSyntheticEmailDomain)) {
 		return nil, nil, ErrEmailReserved
 	}
 	// AD account eligibility is controlled by the directory, not public signup policy.
