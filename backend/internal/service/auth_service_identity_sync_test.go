@@ -236,9 +236,14 @@ func TestWindowsADIgnoresPublicRegistrationRestrictions(t *testing.T) {
 			count, err := client.User.Query().Count(ctx)
 			require.NoError(t, err)
 			require.Equal(t, 1, count)
-			identity, err := client.AuthIdentity.Query().Where(authidentity.UserIDEQ(userID)).Only(ctx)
+			identity, err := client.AuthIdentity.Query().Where(
+				authidentity.UserIDEQ(userID),
+				authidentity.ProviderTypeEQ("windows_ad"),
+			).Only(ctx)
 			require.NoError(t, err)
 			require.Equal(t, "windows_ad", identity.ProviderType)
+			require.Equal(t, input.ProviderKey, identity.ProviderKey)
+			require.Equal(t, input.ProviderSubject, identity.ProviderSubject)
 		})
 	}
 }
