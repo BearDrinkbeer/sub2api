@@ -36,6 +36,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
         if (key === 'profile.authBindings.providers.email') return 'Email'
         if (key === 'profile.authBindings.providers.linuxdo') return 'LinuxDo'
         if (key === 'profile.authBindings.providers.dingtalk') return 'DingTalk'
+        if (key === 'profile.authBindings.providers.windows_ad') return 'Windows AD'
         if (key === 'profile.authBindings.providers.wechat') return 'WeChat'
         if (key === 'profile.authBindings.providers.oidc') return params?.providerName || 'OIDC'
         if (key === 'profile.authBindings.source.avatar') {
@@ -71,6 +72,19 @@ function createUser(overrides: Partial<User> = {}): User {
 }
 
 describe('ProfileInfoCard', () => {
+  it.each([
+    { avatar_source: 'windows_ad', username_source: 'windows_ad' },
+    { profile_sources: { avatar: { provider: 'windows_ad' }, username: { provider: 'windows_ad' } } },
+  ])('recognizes Windows AD profile sources', (sources) => {
+    const wrapper = mount(ProfileInfoCard, {
+      props: { user: createUser(sources) },
+      global: { stubs: { Icon: true } },
+    })
+    expect(wrapper.text()).toContain('Avatar synced from Windows AD')
+    expect(wrapper.text()).toContain('Username synced from Windows AD')
+    wrapper.unmount()
+  })
+
   it.each([
     { avatar_source: 'dingtalk', username_source: 'dingtalk' },
     { profile_sources: { avatar: { provider: 'dingtalk' }, username: { provider: 'dingtalk' } } },

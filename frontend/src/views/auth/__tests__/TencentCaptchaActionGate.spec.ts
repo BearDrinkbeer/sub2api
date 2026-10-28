@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import LoginView from '@/views/auth/LoginView.vue'
 
 const loginMock = vi.fn()
+const loginWindowsADMock = vi.fn()
 const loginWithPasskeyMock = vi.fn()
 const getPublicSettingsMock = vi.fn()
 const startOAuthLoginMock = vi.fn()
@@ -31,6 +32,7 @@ vi.mock('vue-i18n', async () => {
 vi.mock('@/stores', () => ({
   useAuthStore: () => ({
     login: (...args: unknown[]) => loginMock(...args),
+    loginWindowsAD: (...args: unknown[]) => loginWindowsADMock(...args),
     loginWithPasskey: (...args: unknown[]) => loginWithPasskeyMock(...args)
   }),
   useAppStore: () => ({
@@ -98,6 +100,7 @@ function mountLogin() {
 describe('Tencent captcha action gate', () => {
   beforeEach(() => {
     loginMock.mockReset()
+    loginWindowsADMock.mockReset()
     loginWithPasskeyMock.mockReset()
     getPublicSettingsMock.mockReset()
     startOAuthLoginMock.mockReset()
@@ -115,6 +118,7 @@ describe('Tencent captcha action gate', () => {
       google_oauth_enabled: false
     })
     loginMock.mockResolvedValue({})
+    loginWindowsADMock.mockResolvedValue({})
     loginWithPasskeyMock.mockResolvedValue({})
     startOAuthLoginMock.mockResolvedValue({ authorize_url: 'https://github.example/authorize' })
     verifyActionMock.mockResolvedValue({ token: 'ticket-1', randstr: '@rand-1' })
@@ -225,5 +229,125 @@ describe('Tencent captcha action gate', () => {
     await flushPromises()
 
     expect(loginWithPasskeyMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    {
+      provider: 'Tencent',
+      settings: { tencent_captcha_enabled: true, tencent_captcha_app_id: 'tencent-app-id' },
+      proof: { token: 'ticket-1', randstr: '@rand-1' },
+      requestProof: { tencent_captcha_ticket: 'ticket-1', tencent_captcha_randstr: '@rand-1' }
+    },
+    {
+      provider: 'Aliyun',
+      settings: {
+        aliyun_captcha_enabled: true,
+        aliyun_captcha_scene_id: 'aliyun-scene-id',
+        aliyun_captcha_prefix: 'aliyun-prefix'
+      },
+      proof: { token: 'aliyun-verify-param', randstr: '' },
+      requestProof: { turnstile_token: 'aliyun-verify-param' }
+    }
+  ])('passes a fresh $provider proof to AD login', async ({ settings, proof, requestProof }) => {
+    getPublicSettingsMock.mockResolvedValueOnce({
+      ...settings,
+      windows_ad_enabled: true,
+      backend_mode_enabled: false,
+      turnstile_enabled: false
+    })
+    verifyActionMock.mockResolvedValueOnce(proof)
+    const wrapper = mountLogin()
+    await flushPromises()
+    const form = wrapper.get('form[aria-label="Windows AD"]')
+    await form.get('input[type="text"]').setValue(' domain-user ')
+    await form.get('input[type="password"]').setValue('domain-password')
+
+    await form.trigger('submit')
+    await flushPromises()
+
+    expect(verifyActionMock).toHaveBeenCalledOnce()
+    expect(loginWindowsADMock).toHaveBeenCalledWith(expect.objectContaining({
+      username: 'domain-user', password: 'domain-password', ...requestProof
+    }))
+    expect(loginMock).not.toHaveBeenCalled()
+    expect(captchaResetMock).toHaveBeenCalledOnce()
+    expect(form.get<HTMLInputElement>('input[type="password"]').element.value).toBe('')
+    wrapper.unmount()
+  })
+
+  it('submits AD login without loading or invoking captcha when all captcha providers are disabled', async () => {
+    getPublicSettingsMock.mockResolvedValueOnce({
+      windows_ad_enabled: true,
+      backend_mode_enabled: false,
+      turnstile_enabled: false,
+      tencent_captcha_enabled: false,
+      aliyun_captcha_enabled: false
+    })
+    const wrapper = mountLogin()
+    await flushPromises()
+    const form = wrapper.get('form[aria-label="Windows AD"]')
+    await form.get('input[type="text"]').setValue('domain-user')
+    await form.get('input[type="password"]').setValue('domain-password')
+
+    await form.trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.findComponent(CaptchaChallengeStub).exists()).toBe(false)
+    expect(verifyActionMock).not.toHaveBeenCalled()
+    expect(loginWindowsADMock).toHaveBeenCalledWith({
+      username: 'domain-user',
+      password: 'domain-password',
+      turnstile_token: undefined,
+      tencent_captcha_ticket: undefined,
+      tencent_captcha_randstr: undefined
+    })
+    expect(loginMock).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
+  it('does not submit AD credentials when the action captcha is cancelled', async () => {
+    getPublicSettingsMock.mockResolvedValueOnce({
+      windows_ad_enabled: true,
+      tencent_captcha_enabled: true,
+      tencent_captcha_app_id: 'tencent-app-id',
+      turnstile_enabled: false,
+      backend_mode_enabled: false
+    })
+    verifyActionMock.mockResolvedValueOnce(null)
+    const wrapper = mountLogin()
+    await flushPromises()
+    const form = wrapper.get('form[aria-label="Windows AD"]')
+    await form.get('input[type="text"]').setValue('domain-user')
+    await form.get('input[type="password"]').setValue('domain-password')
+
+    await form.trigger('submit')
+    await flushPromises()
+
+    expect(loginWindowsADMock).not.toHaveBeenCalled()
+    expect(captchaResetMock).toHaveBeenCalledOnce()
+    wrapper.unmount()
+  })
+
+  it.each(['modal', 'checkbox'])('requires agreement consent before AD login in %s mode', async (mode) => {
+    localStorage.removeItem('sub2api_login_agreement_consent')
+    getPublicSettingsMock.mockResolvedValueOnce({
+      windows_ad_enabled: true,
+      backend_mode_enabled: false,
+      login_agreement_enabled: true,
+      login_agreement_mode: mode,
+      login_agreement_revision: 'ad-agreement-revision',
+      login_agreement_documents: [{ id: 'terms', title: 'Terms' }]
+    })
+    const wrapper = mountLogin()
+    await flushPromises()
+    const form = wrapper.get('form[aria-label="Windows AD"]')
+
+    expect(form.get('button[type="submit"]').attributes('disabled')).toBeDefined()
+    await form.trigger('submit')
+    await flushPromises()
+
+    expect(verifyActionMock).not.toHaveBeenCalled()
+    expect(loginWindowsADMock).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 })

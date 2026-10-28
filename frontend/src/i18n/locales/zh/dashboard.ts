@@ -986,6 +986,7 @@ export default {
         email: '邮箱',
         linuxdo: 'LinuxDo',
         dingtalk: '钉钉',
+        windows_ad: 'Windows AD',
         oidc: '{providerName}',
         wechat: '微信',
       },

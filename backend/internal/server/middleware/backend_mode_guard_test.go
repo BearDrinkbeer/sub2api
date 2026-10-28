@@ -187,6 +187,12 @@ func TestBackendModeAuthGuard(t *testing.T) {
 			wantStatus: http.StatusOK,
 		},
 		{
+			name:       "enabled_allows_windows_ad_login",
+			enabled:    "true",
+			path:       "/api/v1/auth/windows-ad/login",
+			wantStatus: http.StatusOK,
+		},
+		{
 			name:       "enabled_allows_logout",
 			enabled:    "true",
 			path:       "/api/v1/auth/logout",

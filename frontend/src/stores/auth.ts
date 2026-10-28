@@ -11,7 +11,8 @@ import type {
   LoginRequest,
   RegisterRequest,
   AuthResponse,
-  ActionCaptchaRequestProof
+  ActionCaptchaRequestProof,
+  WindowsADLoginRequest
 } from '@/types'
 
 const AUTH_TOKEN_KEY = 'auth_token'
@@ -263,6 +264,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function loginWindowsAD(credentials: WindowsADLoginRequest): Promise<LoginResponse> {
+    try {
+      const response = await authAPI.loginWindowsAD(credentials)
+      if (isTotp2FARequired(response)) {
+        return response
+      }
+      setAuthFromResponse(response)
+      return response
+    } catch (error) {
+      clearAuth({ preservePendingAuthSession: pendingAuthSession.value !== null })
+      throw error
+    }
+  }
+
   /**
    * Complete login with 2FA code
    * @param tempToken - Temporary token from initial login
@@ -504,6 +519,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Actions
     login,
     loginWithPasskey,
+    loginWindowsAD,
     login2FA,
     register,
     setToken,

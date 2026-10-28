@@ -9,4 +9,4 @@ ALTER TABLE user_provider_default_grants
 
 ALTER TABLE user_provider_default_grants
     ADD CONSTRAINT user_provider_default_grants_provider_type_check
-    CHECK (provider_type IN ('email', 'linuxdo', 'wechat', 'oidc', 'github', 'google', 'dingtalk'));
+    CHECK (provider_type IN ('email', 'linuxdo', 'wechat', 'oidc', 'github', 'google', 'dingtalk', 'windows_ad'));

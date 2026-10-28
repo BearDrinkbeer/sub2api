@@ -158,6 +158,95 @@
               </div>
             </div>
           </details>
+
+          <div class="card">
+            <div class="p-6">
+              <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-3">
+                  <Icon name="server" size="md" class="text-gray-500 dark:text-gray-400" />
+                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                    {{ t('admin.settings.windowsAD.title') }}
+                  </h2>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="text-sm text-gray-600 dark:text-gray-300">{{ t('admin.settings.windowsAD.enabled') }}</span>
+                  <Toggle v-model="form.windows_ad_enabled" />
+                  <span
+                    class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    :class="form.windows_ad_enabled ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400'"
+                  >
+                    {{ form.windows_ad_enabled ? t('admin.settings.windowsAD.statusEnabled') : t('admin.settings.windowsAD.statusDisabled') }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.settings.windowsAD.url') }}</label>
+                  <input v-model="form.windows_ad_url" type="text" class="input font-mono text-sm" placeholder="ldap://10.168.1.182:389" />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.settings.windowsAD.baseDN') }}</label>
+                  <input v-model="form.windows_ad_base_dn" type="text" class="input font-mono text-sm" placeholder="DC=intra,DC=cowintech,DC=cn" />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.settings.windowsAD.bindDN') }}</label>
+                  <input v-model="form.windows_ad_bind_dn" type="text" class="input font-mono text-sm" placeholder="CN=Administrator,CN=Users,DC=intra,DC=cowintech,DC=cn" />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.settings.windowsAD.bindPassword') }}</label>
+                  <input
+                    v-model="form.windows_ad_bind_password"
+                    type="password"
+                    class="input font-mono text-sm"
+                    :placeholder="form.windows_ad_bind_password_configured ? t('admin.settings.windowsAD.bindPasswordConfigured') : t('admin.settings.windowsAD.bindPasswordPlaceholder')"
+                  />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.settings.windowsAD.userSearchBase') }}</label>
+                  <input v-model="form.windows_ad_user_search_base" type="text" class="input font-mono text-sm" placeholder="CN=Users,DC=intra,DC=cowintech,DC=cn" />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.settings.windowsAD.userFilter') }}</label>
+                  <input v-model="form.windows_ad_user_filter" type="text" class="input font-mono text-sm" placeholder="(sAMAccountName={{username}})" />
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.settings.windowsAD.groupSearchBase') }}</label>
+                  <input v-model="form.windows_ad_group_search_base" type="text" class="input font-mono text-sm" placeholder="OU=Groups,DC=company,DC=com" />
+                </div>
+                <div class="flex items-center gap-3 pt-7">
+                  <Toggle v-model="form.windows_ad_start_tls" />
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('admin.settings.windowsAD.startTLS') }}</span>
+                </div>
+              </div>
+
+              <div class="mt-6 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+                <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
+                  <div>
+                    <label class="mb-2 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.settings.windowsAD.emailAttribute') }}</label>
+                    <input v-model="form.windows_ad_email_attribute" type="text" class="input font-mono text-sm" placeholder="mail" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.settings.windowsAD.usernameAttribute') }}</label>
+                    <input v-model="form.windows_ad_username_attribute" type="text" class="input font-mono text-sm" placeholder="sAMAccountName" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.settings.windowsAD.displayAttribute') }}</label>
+                    <input v-model="form.windows_ad_display_attribute" type="text" class="input font-mono text-sm" placeholder="displayName" />
+                  </div>
+                  <div>
+                    <label class="mb-2 block text-xs font-medium text-gray-600 dark:text-gray-400">{{ t('admin.settings.windowsAD.idAttribute') }}</label>
+                    <input v-model="form.windows_ad_id_attribute" type="text" class="input font-mono text-sm" placeholder="objectGUID" />
+                  </div>
+                </div>
+
+                <label class="mt-4 flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                  <Toggle v-model="form.windows_ad_skip_tls_verify" />
+                  {{ t('admin.settings.windowsAD.skipTLSVerify') }}
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
         <!-- /Tab: Security — Admin API Key -->
 
@@ -9700,6 +9789,9 @@ type SettingsForm = Omit<
   oidc_connect_client_secret: string;
   github_oauth_client_secret: string;
   google_oauth_client_secret: string;
+  windows_ad_bind_password: string;
+  windows_ad_user_search_base: string;
+  windows_ad_group_search_base: string;
   force_email_on_third_party_signup: boolean;
   openai_low_upstream_rate_priority_enabled: boolean;
   openai_oauth_scheduling_rate_multiplier: number | "" | null;
@@ -9923,6 +10015,23 @@ const form = reactive<SettingsForm>({
   oidc_connect_userinfo_email_path: "",
   oidc_connect_userinfo_id_path: "",
   oidc_connect_userinfo_username_path: "",
+  windows_ad_enabled: false,
+  windows_ad_provider_name: "Windows AD",
+  windows_ad_url: "",
+  windows_ad_base_dn: "",
+  windows_ad_user_search_base: "",
+  windows_ad_group_search_base: "",
+  windows_ad_bind_dn: "",
+  windows_ad_bind_password: "",
+  windows_ad_bind_password_configured: false,
+  windows_ad_user_filter:
+    "(&(objectClass=user)(!(objectClass=computer))(|(sAMAccountName={username})(userPrincipalName={username})))",
+  windows_ad_email_attribute: "mail",
+  windows_ad_username_attribute: "sAMAccountName",
+  windows_ad_display_attribute: "displayName",
+  windows_ad_id_attribute: "objectGUID",
+  windows_ad_start_tls: false,
+  windows_ad_skip_tls_verify: false,
   // GitHub / Google 邮箱快捷登录
   github_oauth_enabled: false,
   github_oauth_client_id: "",
@@ -10249,6 +10358,11 @@ const authSourceDefaultsMeta = computed(() => [
       "通过钉钉首次注册或首次绑定时应用。",
       "Applied on first signup or first bind through DingTalk.",
     ),
+  },
+  {
+    source: "windows_ad" as AuthSourceType,
+    title: t("admin.settings.authSourceDefaults.sources.windows_ad.title"),
+    description: t("admin.settings.authSourceDefaults.sources.windows_ad.description"),
   },
 ]);
 
@@ -11160,6 +11274,7 @@ async function loadSettings() {
       form.wechat_connect_mode,
     );
     form.oidc_connect_client_secret = "";
+    form.windows_ad_bind_password = "";
 
     // Load OpenAI fast/flex policy rules from bulk settings.
     // 仅当 payload 真的包含该字段时填充并标记为已加载；否则保持表单空值，
@@ -11590,6 +11705,21 @@ async function saveSettings() {
       oidc_connect_userinfo_id_path: form.oidc_connect_userinfo_id_path,
       oidc_connect_userinfo_username_path:
         form.oidc_connect_userinfo_username_path,
+      windows_ad_enabled: form.windows_ad_enabled,
+      windows_ad_provider_name: form.windows_ad_provider_name,
+      windows_ad_url: form.windows_ad_url,
+      windows_ad_base_dn: form.windows_ad_base_dn,
+      windows_ad_user_search_base: form.windows_ad_user_search_base,
+      windows_ad_group_search_base: form.windows_ad_group_search_base,
+      windows_ad_bind_dn: form.windows_ad_bind_dn,
+      windows_ad_bind_password: form.windows_ad_bind_password || undefined,
+      windows_ad_user_filter: form.windows_ad_user_filter,
+      windows_ad_email_attribute: form.windows_ad_email_attribute,
+      windows_ad_username_attribute: form.windows_ad_username_attribute,
+      windows_ad_display_attribute: form.windows_ad_display_attribute,
+      windows_ad_id_attribute: form.windows_ad_id_attribute,
+      windows_ad_start_tls: form.windows_ad_start_tls,
+      windows_ad_skip_tls_verify: form.windows_ad_skip_tls_verify,
       github_oauth_enabled: form.github_oauth_enabled,
       github_oauth_client_id: form.github_oauth_client_id,
       github_oauth_client_secret:
@@ -11866,6 +11996,7 @@ async function saveSettings() {
       form.wechat_connect_mode,
     );
     form.oidc_connect_client_secret = "";
+    form.windows_ad_bind_password = "";
     // Refresh OpenAI fast/flex policy from server response
     if (
       updated.openai_fast_policy_settings &&

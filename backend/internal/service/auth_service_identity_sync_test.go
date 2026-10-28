@@ -170,6 +170,119 @@ func TestAuthServiceRegisterDualWritesEmailIdentity(t *testing.T) {
 	require.NotNil(t, identity.VerifiedAt)
 }
 
+func TestWindowsADDefersSessionUntilFinalLoginChecks(t *testing.T) {
+	svc, _, client := newAuthServiceWithEnt(t, map[string]string{
+		service.SettingKeyRegistrationEnabled: "false",
+	}, nil)
+	ctx := context.Background()
+	input := service.EmailOAuthIdentityInput{
+		ProviderType:    "windows_ad",
+		ProviderKey:     "DC=example,DC=com",
+		ProviderSubject: "objectguid:deferred-ad",
+		Email:           "objectguid-deferred-ad" + service.WindowsADSyntheticEmailDomain,
+		EmailVerified:   true,
+		Username:        "domain-user",
+		DeferSession:    true,
+	}
+	for attempt := 0; attempt < 2; attempt++ {
+		pair, user, err := svc.LoginOrRegisterVerifiedEmailOAuth(ctx, input)
+		require.NoError(t, err)
+		require.Nil(t, pair)
+		stored, err := client.User.Get(ctx, user.ID)
+		require.NoError(t, err)
+		require.Equal(t, "windows_ad", stored.SignupSource)
+		require.Nil(t, stored.LastLoginAt)
+		require.Nil(t, stored.LastActiveAt)
+		count, err := client.User.Query().Count(ctx)
+		require.NoError(t, err)
+		require.Equal(t, 1, count)
+		identities, err := client.AuthIdentity.Query().Where(authidentity.UserIDEQ(user.ID)).All(ctx)
+		require.NoError(t, err)
+		require.Len(t, identities, 1)
+		require.Equal(t, "windows_ad", identities[0].ProviderType)
+	}
+}
+
+func TestWindowsADIgnoresPublicRegistrationRestrictions(t *testing.T) {
+	for _, email := range []string{"domain-user@intra.example.com", "objectguid-domain-user" + service.WindowsADSyntheticEmailDomain} {
+		t.Run(email, func(t *testing.T) {
+			svc, _, client := newAuthServiceWithEnt(t, map[string]string{
+				service.SettingKeyRegistrationEnabled:              "false",
+				service.SettingKeyInvitationCodeEnabled:            "true",
+				service.SettingKeyRegistrationEmailSuffixWhitelist: `["@public.example.com"]`,
+			}, nil)
+			ctx := context.Background()
+			input := service.EmailOAuthIdentityInput{
+				ProviderType:    "windows_ad",
+				ProviderKey:     "DC=intra,DC=example,DC=com",
+				ProviderSubject: "objectguid:domain-user",
+				Email:           email,
+				EmailVerified:   true,
+				Username:        "domain-user",
+				DeferSession:    true,
+			}
+			var userID int64
+			for attempt := 0; attempt < 2; attempt++ {
+				pair, user, err := svc.LoginOrRegisterVerifiedEmailOAuth(ctx, input)
+				require.NoError(t, err)
+				require.Nil(t, pair)
+				require.NotNil(t, user)
+				if attempt == 0 {
+					userID = user.ID
+				}
+				require.Equal(t, userID, user.ID)
+				require.Equal(t, email, user.Email)
+			}
+			count, err := client.User.Query().Count(ctx)
+			require.NoError(t, err)
+			require.Equal(t, 1, count)
+			identity, err := client.AuthIdentity.Query().Where(
+				authidentity.UserIDEQ(userID),
+				authidentity.ProviderTypeEQ("windows_ad"),
+			).Only(ctx)
+			require.NoError(t, err)
+			require.Equal(t, "windows_ad", identity.ProviderType)
+			require.Equal(t, input.ProviderKey, identity.ProviderKey)
+			require.Equal(t, input.ProviderSubject, identity.ProviderSubject)
+		})
+	}
+}
+
+func TestEmailOAuthPublicRegistrationRestrictionsRemainEnforced(t *testing.T) {
+	for _, provider := range []string{"github", "google", "oidc"} {
+		for _, tc := range []struct {
+			name      string
+			whitelist string
+			wantErr   error
+		}{
+			{name: "email_whitelist", whitelist: `["@public.example.com"]`, wantErr: service.ErrEmailSuffixNotAllowed},
+			{name: "invitation", whitelist: `[]`, wantErr: service.ErrOAuthInvitationRequired},
+		} {
+			t.Run(provider+"/"+tc.name, func(t *testing.T) {
+				svc, _, client := newAuthServiceWithEnt(t, map[string]string{
+					service.SettingKeyRegistrationEnabled:              "true",
+					service.SettingKeyInvitationCodeEnabled:            "true",
+					service.SettingKeyRegistrationEmailSuffixWhitelist: tc.whitelist,
+				}, nil)
+				ctx := context.Background()
+				pair, user, err := svc.LoginOrRegisterVerifiedEmailOAuth(ctx, service.EmailOAuthIdentityInput{
+					ProviderType:    provider,
+					ProviderSubject: "public-user",
+					Email:           "public-user@intra.example.com",
+					EmailVerified:   true,
+					DeferSession:    true,
+				})
+				require.ErrorIs(t, err, tc.wantErr)
+				require.Nil(t, pair)
+				require.Nil(t, user)
+				count, err := client.User.Query().Count(ctx)
+				require.NoError(t, err)
+				require.Zero(t, count)
+			})
+		}
+	}
+}
+
 func TestAuthServiceLoginDefersLastLoginTouchUntilRecordSuccessfulLogin(t *testing.T) {
 	svc, _, client := newAuthServiceWithEnt(t, map[string]string{
 		service.SettingKeyRegistrationEnabled: "true",

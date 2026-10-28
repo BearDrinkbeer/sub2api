@@ -87,3 +87,23 @@ func TestEmailOAuthAuto_SnapshotsPlatformQuotaDefaults(t *testing.T) {
 	require.NotNil(t, geminiRecord.MonthlyLimitUSD)
 	require.InDelta(t, 100.0, *geminiRecord.MonthlyLimitUSD, 0.0001)
 }
+
+func TestWindowsADAutoProvisionWhenPublicRegistrationDisabled(t *testing.T) {
+	for _, provider := range []string{"windows_ad", "github", "google", "oidc"} {
+		t.Run(provider, func(t *testing.T) {
+			userRepo := &userRepoStub{nextID: 88}
+			svc := newEmailOAuthAutoAuthService(userRepo, map[string]string{
+				SettingKeyRegistrationEnabled: "false",
+			}, nil)
+			user, err := svc.createEmailOAuthUser(context.Background(), "ad@example.com", "ad-user", provider, "", "")
+			if provider != "windows_ad" {
+				require.ErrorIs(t, err, ErrRegDisabled)
+				require.Nil(t, user)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, "windows_ad", user.SignupSource)
+			require.Equal(t, RoleUser, user.Role)
+		})
+	}
+}

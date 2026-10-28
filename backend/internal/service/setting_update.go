@@ -293,6 +293,8 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 		updates[SettingKeyOIDCConnectClientSecret] = settings.OIDCConnectClientSecret
 	}
 
+	writeWindowsADSettingsUpdates(updates, settings)
+
 	// GitHub / Google 邮箱快捷登录
 	updates[SettingKeyGitHubOAuthEnabled] = strconv.FormatBool(settings.GitHubOAuthEnabled)
 	updates[SettingKeyGitHubOAuthClientID] = strings.TrimSpace(settings.GitHubOAuthClientID)
@@ -660,6 +662,7 @@ func (s *SettingService) buildAuthSourceDefaultUpdates(ctx context.Context, sett
 		settings.GitHub.Subscriptions,
 		settings.Google.Subscriptions,
 		settings.DingTalk.Subscriptions,
+		settings.WindowsAD.Subscriptions,
 	} {
 		if err := s.validateDefaultSubscriptionGroups(ctx, subscriptions); err != nil {
 			return nil, err
@@ -678,6 +681,7 @@ func (s *SettingService) buildAuthSourceDefaultUpdates(ctx context.Context, sett
 		{"github", settings.GitHub.PlatformQuotas},
 		{"google", settings.Google.PlatformQuotas},
 		{"dingtalk", settings.DingTalk.PlatformQuotas},
+		{"windows_ad", settings.WindowsAD.PlatformQuotas},
 	} {
 		if pgs.pq != nil {
 			if err := validateDefaultPlatformQuotaMap(pgs.pq); err != nil {
@@ -694,6 +698,7 @@ func (s *SettingService) buildAuthSourceDefaultUpdates(ctx context.Context, sett
 	writeProviderDefaultGrantUpdates(updates, gitHubAuthSourceDefaultKeys, settings.GitHub)
 	writeProviderDefaultGrantUpdates(updates, googleAuthSourceDefaultKeys, settings.Google)
 	writeProviderDefaultGrantUpdates(updates, dingTalkAuthSourceDefaultKeys, settings.DingTalk)
+	writeProviderDefaultGrantUpdates(updates, windowsADAuthSourceDefaultKeys, settings.WindowsAD)
 	updates[SettingKeyForceEmailOnThirdPartySignup] = strconv.FormatBool(settings.ForceEmailOnThirdPartySignup)
 	return updates, nil
 }

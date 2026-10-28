@@ -982,6 +982,7 @@ export default {
         email: 'Email',
         linuxdo: 'LinuxDo',
         dingtalk: 'DingTalk',
+        windows_ad: 'Windows AD',
         oidc: '{providerName}',
         wechat: 'WeChat',
       },

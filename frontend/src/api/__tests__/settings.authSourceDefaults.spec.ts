@@ -38,6 +38,14 @@ describe("admin settings auth source defaults helpers", () => {
       ],
       auth_source_default_linuxdo_grant_on_signup: true,
       auth_source_default_linuxdo_grant_on_first_bind: false,
+      auth_source_default_windows_ad_balance: 12,
+      auth_source_default_windows_ad_concurrency: 7,
+      auth_source_default_windows_ad_subscriptions: [{ group_id: 4, validity_days: 14 }],
+      auth_source_default_windows_ad_grant_on_signup: true,
+      auth_source_default_windows_ad_grant_on_first_bind: false,
+      auth_source_default_windows_ad_platform_quotas: {
+        openai: { daily: 0, weekly: 50, monthly: null },
+      },
     });
 
     expect(state.email).toEqual({
@@ -72,6 +80,17 @@ describe("admin settings auth source defaults helpers", () => {
       grant_on_first_bind: false,
       platform_quotas: allNullQuotas,
     });
+    expect(state.windows_ad).toEqual({
+      balance: 12,
+      concurrency: 7,
+      subscriptions: [{ group_id: 4, validity_days: 14 }],
+      grant_on_signup: true,
+      grant_on_first_bind: false,
+      platform_quotas: {
+        ...allNullQuotas,
+        openai: { daily: 0, weekly: 50, monthly: null },
+      },
+    });
   });
 
   it("defaults grant-on-signup to disabled when settings are missing", () => {
@@ -81,6 +100,7 @@ describe("admin settings auth source defaults helpers", () => {
     expect(state.linuxdo.grant_on_signup).toBe(false);
     expect(state.oidc.grant_on_signup).toBe(false);
     expect(state.wechat.grant_on_signup).toBe(false);
+    expect(state.windows_ad.grant_on_signup).toBe(false);
   });
 
   it("reads nested platform_quotas from settings into auth source state", () => {
@@ -162,6 +182,14 @@ describe("admin settings auth source defaults helpers", () => {
         grant_on_first_bind: false,
         platform_quotas: {},
       },
+      windows_ad: {
+        balance: 12,
+        concurrency: 7,
+        subscriptions: [{ group_id: 4, validity_days: 14 }],
+        grant_on_signup: true,
+        grant_on_first_bind: false,
+        platform_quotas: {},
+      },
     });
 
     expect(payload).toMatchObject({
@@ -190,6 +218,11 @@ describe("admin settings auth source defaults helpers", () => {
       auth_source_default_wechat_subscriptions: [],
       auth_source_default_wechat_grant_on_signup: false,
       auth_source_default_wechat_grant_on_first_bind: false,
+      auth_source_default_windows_ad_balance: 12,
+      auth_source_default_windows_ad_concurrency: 7,
+      auth_source_default_windows_ad_subscriptions: [{ group_id: 4, validity_days: 14 }],
+      auth_source_default_windows_ad_grant_on_signup: true,
+      auth_source_default_windows_ad_grant_on_first_bind: false,
       // 嵌套 platform_quotas 字段
       auth_source_default_email_platform_quotas: allNullQuotas,
       auth_source_default_linuxdo_platform_quotas: allNullQuotas,
@@ -198,6 +231,7 @@ describe("admin settings auth source defaults helpers", () => {
       auth_source_default_github_platform_quotas: allNullQuotas,
       auth_source_default_google_platform_quotas: allNullQuotas,
       auth_source_default_dingtalk_platform_quotas: allNullQuotas,
+      auth_source_default_windows_ad_platform_quotas: allNullQuotas,
     });
   });
 
@@ -221,6 +255,7 @@ describe("admin settings auth source defaults helpers", () => {
       github:  { balance: 0, concurrency: 5, subscriptions: [], grant_on_signup: false, grant_on_first_bind: false, platform_quotas: {} },
       google:  { balance: 0, concurrency: 5, subscriptions: [], grant_on_signup: false, grant_on_first_bind: false, platform_quotas: {} },
       dingtalk: { balance: 0, concurrency: 5, subscriptions: [], grant_on_signup: false, grant_on_first_bind: false, platform_quotas: {} },
+      windows_ad: { balance: 0, concurrency: 5, subscriptions: [], grant_on_signup: false, grant_on_first_bind: false, platform_quotas: {} },
     });
 
     const emailQuotas = (payload as Record<string, unknown>)["auth_source_default_email_platform_quotas"] as DefaultPlatformQuotasMap;

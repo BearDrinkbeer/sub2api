@@ -11,6 +11,8 @@ import (
 	"testing/fstest"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/migrations"
+
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
 )
@@ -92,6 +94,22 @@ func TestIsMigrationChecksumCompatible_AdditionalCases(t *testing.T) {
 	}
 	require.NotEmpty(t, accepted)
 	require.True(t, isMigrationChecksumCompatible(name, accepted, rule.fileChecksum))
+}
+
+func TestWindowsADMigrationChecksumCompatibility(t *testing.T) {
+	for name, original := range map[string]string{
+		"136_add_dingtalk_provider_type.sql":                "72b6005ff64cddd845615e249d95858010dd6d3bd7a1d24b3e9a32eb03b76eb8",
+		"140_extend_user_provider_default_grants_check.sql": "6dc603ebee5a42ff53d9f4c69eda12075a08c2fa1c33271157effc6e11de2d83",
+	} {
+		t.Run(name, func(t *testing.T) {
+			content, err := migrations.FS.ReadFile(name)
+			require.NoError(t, err)
+			current := migrationChecksum(string(content))
+			require.True(t, isMigrationChecksumCompatible(name, original, current))
+			require.False(t, isMigrationChecksumCompatible(name, "unknown-checksum", current))
+			require.False(t, isMigrationChecksumCompatible(name, original, "unknown-checksum"))
+		})
+	}
 }
 
 func TestMigrationChecksumCompatibilityRules_CoverEditedUpgradeCompatibilityMigrations(t *testing.T) {

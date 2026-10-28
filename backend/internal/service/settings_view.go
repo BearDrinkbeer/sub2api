@@ -135,6 +135,24 @@ type SystemSettings struct {
 	OIDCConnectUserInfoIDPath         string
 	OIDCConnectUserInfoUsernamePath   string
 
+	// Windows AD 域登录
+	WindowsADEnabled                bool
+	WindowsADProviderName           string
+	WindowsADURL                    string
+	WindowsADBaseDN                 string
+	WindowsADUserSearchBase         string
+	WindowsADGroupSearchBase        string
+	WindowsADBindDN                 string
+	WindowsADBindPassword           string `json:"-"`
+	WindowsADBindPasswordConfigured bool
+	WindowsADUserFilter             string
+	WindowsADEmailAttribute         string
+	WindowsADUsernameAttribute      string
+	WindowsADDisplayAttribute       string
+	WindowsADIDAttribute            string
+	WindowsADStartTLS               bool
+	WindowsADSkipTLSVerify          bool
+
 	// GitHub / Google 邮箱快捷登录
 	GitHubOAuthEnabled                bool
 	GitHubOAuthClientID               string
@@ -379,6 +397,8 @@ type PublicSettings struct {
 	PaymentBalanceDisabled   bool
 	OIDCOAuthEnabled         bool
 	OIDCOAuthProviderName    string
+	WindowsADEnabled         bool
+	WindowsADProviderName    string
 	GitHubOAuthEnabled       bool
 	GoogleOAuthEnabled       bool
 	Version                  string

@@ -83,10 +83,16 @@ func TestAuthIdentityFoundationSchemas(t *testing.T) {
 	require.Equal(t, 1, signupSource.Validators)
 
 	validator := requireStringFieldValidator(t, User{}.Fields(), "signup_source")
-	for _, value := range []string{"email", "linuxdo", "wechat", "oidc", "github", "google", "dingtalk"} {
+	for _, value := range []string{"email", "linuxdo", "wechat", "oidc", "github", "google", "dingtalk", "windows_ad"} {
 		require.NoError(t, validator(value))
 	}
 	require.Error(t, validator("unknown"))
+	for _, fields := range [][]ent.Field{AuthIdentity{}.Fields(), AuthIdentityChannel{}.Fields(), PendingAuthSession{}.Fields()} {
+		providerValidator := requireStringFieldValidator(t, fields, "provider_type")
+		require.NoError(t, providerValidator("windows_ad"))
+		require.NoError(t, providerValidator("dingtalk"))
+		require.Error(t, providerValidator("unknown"))
+	}
 }
 
 func requireSchema(t *testing.T, schemas map[string]*load.Schema, name string) *load.Schema {
@@ -133,7 +139,7 @@ func requireStringFieldValidator(t *testing.T, fields []ent.Field, name string) 
 			continue
 		}
 		require.NotEmpty(t, descriptor.Validators, "field %s should include a validator", name)
-		validator, ok := descriptor.Validators[0].(func(string) error)
+		validator, ok := descriptor.Validators[len(descriptor.Validators)-1].(func(string) error)
 		require.True(t, ok, "field %s validator should be func(string) error", name)
 		return validator
 	}

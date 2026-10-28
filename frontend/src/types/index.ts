@@ -34,7 +34,7 @@ export interface NotifyEmailEntry {
 
 // ==================== User & Auth Types ====================
 
-export type UserAuthProvider = 'email' | 'linuxdo' | 'oidc' | 'wechat' | 'github' | 'google' | 'dingtalk'
+export type UserAuthProvider = 'email' | 'linuxdo' | 'oidc' | 'wechat' | 'github' | 'google' | 'dingtalk' | 'windows_ad'
 
 export interface UserAuthBindingStatus {
   bound?: boolean
@@ -131,6 +131,13 @@ export interface TencentCaptchaRequestProof {
 // 腾讯填 tencent_captcha_*，阿里云的 captchaVerifyParam 复用 turnstile_token 字段
 export interface ActionCaptchaRequestProof extends Partial<TencentCaptchaRequestProof> {
   turnstile_token?: string
+}
+
+export interface WindowsADLoginRequest extends ActionCaptchaRequestProof {
+  username: string
+  password: string
+  invitation_code?: string
+  aff_code?: string
 }
 
 export interface RegisterRequest {
@@ -255,6 +262,8 @@ export interface PublicSettings {
   wechat_oauth_mobile_enabled?: boolean
   oidc_oauth_enabled: boolean
   oidc_oauth_provider_name: string
+  windows_ad_enabled?: boolean
+  windows_ad_provider_name?: string
   github_oauth_enabled: boolean
   google_oauth_enabled: boolean
   backend_mode_enabled: boolean
